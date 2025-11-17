@@ -6,6 +6,21 @@ function toId(name) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
+// Helper function to format date as YYYY-MM-DD
+function formatDate(date) {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2)
+        month = '0' + month;
+    if (day.length < 2)
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('PO Generator loaded.');
 
@@ -20,12 +35,35 @@ document.addEventListener('DOMContentLoaded', () => {
         poFields.forEach(field => {
             const id = toId(field);
             const div = document.createElement('div');
+            const isDateField = field.includes('Date');
+            const inputType = isDateField ? 'date' : 'text';
+            const placeholder = `Enter ${field}`;
+
             div.innerHTML = `
                 <label for="${id}" class="block text-sm font-medium text-gray-700">${field}</label>
-                <input type="text" id="${id}" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input type="${inputType}" id="${id}" placeholder="${placeholder}" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             `;
             poDetailsContainer.appendChild(div);
         });
+
+        // Set default dates
+        const poDate = document.getElementById('po-date');
+        const shipDate = document.getElementById('ship-date');
+        const cancelDate = document.getElementById('cancel-date');
+
+        if (poDate && shipDate && cancelDate) {
+            const today = new Date();
+            poDate.value = formatDate(today);
+
+            const ship = new Date();
+            ship.setMonth(ship.getMonth() + 4);
+            ship.setDate(1);
+            shipDate.value = formatDate(ship);
+
+            const cancel = new Date(ship);
+            cancel.setDate(cancel.getDate() + 30);
+            cancelDate.value = formatDate(cancel);
+        }
     }
 
     const csvUpload = document.getElementById('csv-upload');
@@ -113,12 +151,21 @@ function generatePdf(groupedData) {
         doc.setFontSize(12);
         doc.text("PURCHASE ORDER", 200, 22, { align: 'right' });
 
+        // Add PO Number below the header
+        doc.setFontSize(10);
+        doc.setTextColor('#00A7FF');
+        doc.setFont(undefined, 'bold');
+        doc.text(`PO Number: ${poDetails["PO Number"]}`, 200, 28, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor('#000000');
+
         // Add PO Details table
         const poDetailsBody = [];
-        for (let i = 0; i < poFields.length; i += 2) {
+        const filteredPoFields = poFields.filter(field => field !== "PO Number");
+        for (let i = 0; i < filteredPoFields.length; i += 2) {
             poDetailsBody.push([
-                poFields[i], poDetails[poFields[i]],
-                poFields[i+1] ? poFields[i+1] : '', poDetails[poFields[i+1]] ? poDetails[poFields[i+1]] : ''
+                filteredPoFields[i], poDetails[filteredPoFields[i]],
+                filteredPoFields[i+1] ? filteredPoFields[i+1] : '', poDetails[filteredPoFields[i+1]] ? poDetails[filteredPoFields[i+1]] : ''
             ]);
         }
 
@@ -130,6 +177,7 @@ function generatePdf(groupedData) {
             didDrawCell: (data) => {
                 if (data.column.index % 2 === 0) {
                     data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = '#f3f4f6';
                 }
             }
         });
@@ -175,7 +223,7 @@ function generatePdf(groupedData) {
                     body: [
                         ['Totals', '', pagePcs.toFixed(0), '', '', pageDz.toFixed(2), pageAmount.toFixed(2), '', '', '', '']
                     ],
-                    startY: doc.internal.pageSize.height - 40,
+                    startY: doc.internal.pageSize.height - 30,
                     theme: 'grid',
                     styles: { fontSize: 8, fontStyle: 'bold' },
                     didParseCell: (cellData) => {
