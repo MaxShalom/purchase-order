@@ -196,16 +196,22 @@ function generatePdf(groupedData) {
         doc.text(companyInfo.address, 14, 28);
         doc.text(companyInfo.tel, 14, 34);
 
-        doc.setFontSize(12);
-        doc.text("PURCHASE ORDER", 200, 22, { align: 'right' });
-
-        // Add PO Number below the header
-        doc.setFontSize(10);
-        doc.setTextColor('#00A7FF');
+        // Right-aligned header
+        const rightHeaderX = 145;
+        const rightHeaderY = 18;
+        doc.setFontSize(14);
         doc.setFont(undefined, 'bold');
-        doc.text(`PO Number: ${poDetails["PO Number"]}`, 200, 28, { align: 'right' });
+        doc.text("PURCHASE ORDER", 200, rightHeaderY, { align: 'right' });
+        doc.setFontSize(12);
+        doc.setTextColor('#0050BF');
+        doc.text(`PO Number: ${poDetails["PO Number"]}`, 200, rightHeaderY + 8, { align: 'right' });
+
+        // Reset text properties
         doc.setFont(undefined, 'normal');
         doc.setTextColor('#000000');
+
+        // Border around the right-aligned header
+        doc.rect(rightHeaderX, rightHeaderY - 8, 58, 20);
 
         // Add PO Details table
         const poDetailsBody = [];
@@ -230,10 +236,10 @@ function generatePdf(groupedData) {
             row['Style Number'],
             row['Sizes'],
             row['Pcs'],
-            row['Price/Pc'],
-            row['Price/DZ'],
+            `$${row['Price/Pc']}`,
+            `$${row['Price/DZ']}`,
             row['Qty (DZ)'],
-            row['Amount'],
+            `$${row['Amount']}`,
             row['Packing: Master'],
             row['Packing: Inner'],
             row['Inner: Colorway 1'],
@@ -246,6 +252,9 @@ function generatePdf(groupedData) {
             startY: doc.autoTable.previous.finalY + 5,
             theme: 'grid',
             styles: { fontSize: 8 },
+            headStyles: {
+                fillColor: '#0050BF'
+            },
             didParseCell: (data) => {
                 if (data.row.section === 'body' && data.column.index > 1) { // Right align numeric columns
                     data.cell.styles.halign = 'right';
@@ -257,18 +266,18 @@ function generatePdf(groupedData) {
                     doc.text("PURCHASE ORDER (cont.)", 200, 22, { align: 'right' });
                 }
 
-                // Page totals - Filter rows belonging to the current page
+                // Page totals
                 const pageRows = data.table.body.filter(row => row.pageNumber === data.pageNumber);
                 const pagePcs = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[2].text || 0), 0);
                 const pageDz = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[5].text || 0), 0);
-                const pageAmount = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[6].text || 0), 0);
+                const pageAmount = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[6].text.replace('$', '') || 0), 0);
 
-                const finalY = doc.autoTable.previous.finalY;
+                // Add Totals row
                 doc.autoTable({
                     body: [
-                        ['Totals', '', pagePcs.toFixed(0), '', '', pageDz.toFixed(2), pageAmount.toFixed(2), '', '', '', '']
+                        ['Totals', '', pagePcs.toFixed(0), '', '', pageDz.toFixed(2), `$${pageAmount.toFixed(2)}`, '', '', '', '']
                     ],
-                    startY: finalY + 2,
+                    startY: data.cursor.y,
                     theme: 'grid',
                     styles: { fontSize: 8, fontStyle: 'bold' },
                     didParseCell: (cellData) => {
@@ -278,22 +287,16 @@ function generatePdf(groupedData) {
                     }
                 });
 
-                const spaceAfterTable = 10;
-                let bottomContentY = doc.autoTable.previous.finalY + spaceAfterTable;
+                // Image box and remarks
+                const imageBoxY = doc.autoTable.previous.finalY + 10;
+                doc.rect(14, imageBoxY, 37.5, 30); // Image box (25% smaller)
+                doc.text("Remarks:", 55, imageBoxY + 5);
+                doc.text(remarks, 55, imageBoxY + 10, { maxWidth: 140 });
 
-                // Ensure bottom content doesn't get cut off
-                if (bottomContentY > doc.internal.pageSize.height - 100) {
-                    doc.addPage();
-                    bottomContentY = 20; // Reset Y position on new page
-                }
-
-                doc.rect(14, bottomContentY, 100, 80); // Image box (2x size)
-                doc.text("Remarks:", 120, bottomContentY + 5);
-                doc.text(remarks, 120, bottomContentY + 10, { maxWidth: 70 });
-
-                const noticeY = bottomContentY + 85; // Position notice below the image box
-                doc.text("Testing Notice:", 14, noticeY);
-                doc.text(companyInfo.notice, 14, noticeY + 5, { maxWidth: 180 });
+                // Footer
+                const pageHeight = doc.internal.pageSize.height;
+                doc.setFontSize(8);
+                doc.text(companyInfo.notice, 14, pageHeight - 15, { maxWidth: 180 });
             }
         });
     }
