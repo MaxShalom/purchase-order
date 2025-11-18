@@ -1,4 +1,3 @@
-
 // Allura Imports Inc. - Purchase Order Generator
 // Main script file for handling data and generating PDFs.
 
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const poDetailsContainer = document.getElementById('po-details-grid');
     if (poDetailsContainer) {
         const poFields = [
-            "PO Date", "Ship Date", "Cancel Date", "PO Number", "Vendor", "Origin", "Ship Terms", "Pay Terms",
+            "PO Date", "PO Number", "Ship Date", "Cancel Date", "Vendor", "Origin", "Ship Terms", "Pay Terms",
             "Destination", "Department", "Class", "Sub Class", "Label/Brand", "Season", "Year",
             "Royalty Code", "Item Description", "Top Fabric", "Bottom Fabric"
         ];
@@ -40,69 +39,30 @@ document.addEventListener('DOMContentLoaded', () => {
             let inputHtml;
             if (field === "Season") {
                 inputHtml = `
-                    <label for="${id}" class="label">${field}</label>
-                    <select id="${id}" class="custom-input">
+                    <label for="${id}" class="block text-sm font-medium text-gray-700">${field}</label>
+                    <select id="${id}" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         <option>Spring</option>
                         <option>Fall</option>
                     </select>
-                `;
-            } else if (field === "Destination") {
-                inputHtml = `
-                    <label for="${id}" class="label">${field}</label>
-                    <select id="${id}" class="custom-input">
-                        <option>NY</option>
-                        <option>LA</option>
-                        <option>Other</option>
-                    </select>
-                `;
-            } else if (field === "Origin") {
-                inputHtml = `
-                    <label for="${id}" class="label">${field}</label>
-                    <select id="${id}" class="custom-input">
-                        <option>Egypt</option>
-                        <option>Bangladesh</option>
-                        <option>China</option>
-                        <option>Pakistan</option>
-                        <option>India</option>
-                        <option>Other</option>
-                    </select>
-                    <input type="text" id="${id}-other" placeholder="Enter other origin" class="hidden custom-input mt-2">
                 `;
             } else {
                 const isDateField = field.includes('Date');
                 const inputType = isDateField ? 'date' : 'text';
                 const placeholder = `Enter ${field}`;
                 inputHtml = `
-                    <label for="${id}" class="label">${field}</label>
-                    <input type="${inputType}" id="${id}" placeholder="${placeholder}" class="custom-input">
+                    <label for="${id}" class="block text-sm font-medium text-gray-700">${field}</label>
+                    <input type="${inputType}" id="${id}" placeholder="${placeholder}" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 `;
             }
 
             div.innerHTML = inputHtml;
             poDetailsContainer.appendChild(div);
-
-            if (field === "Origin") {
-                const originSelect = document.getElementById('origin');
-                const otherOriginInput = document.getElementById('origin-other');
-                originSelect.addEventListener('change', (event) => {
-                    if (event.target.value === 'Other') {
-                        otherOriginInput.classList.remove('hidden');
-                    } else {
-                        otherOriginInput.classList.add('hidden');
-                    }
-                });
-            }
         });
 
-        // Set default dates and year
+        // Set default dates
         const poDate = document.getElementById('po-date');
         const shipDate = document.getElementById('ship-date');
         const cancelDate = document.getElementById('cancel-date');
-        const yearInput = document.getElementById('year');
-
-        if (yearInput) {
-            yearInput.value = '2026';
-        }
 
         if (poDate && shipDate && cancelDate) {
             const today = new Date();
@@ -120,20 +80,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const csvUpload = document.getElementById('csv-upload');
+    const fileNameSpan = document.getElementById('file-name');
+    let uploadedData = [];
+
     if (csvUpload) {
         csvUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                fileNameSpan.textContent = file.name;
                 Papa.parse(file, {
                     header: true,
                     complete: (results) => {
-                        window.uploadedData = results.data;
-                        console.log('CSV data parsed:', window.uploadedData);
+                        uploadedData = results.data;
+                        console.log('CSV data parsed:', uploadedData);
                     },
                     error: (error) => {
                         console.error('Error parsing CSV:', error);
+                        fileNameSpan.textContent = 'Error parsing file!';
                     }
                 });
+            } else {
+                fileNameSpan.textContent = 'No file chosen';
             }
         });
     }
@@ -142,11 +109,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateButton = document.getElementById('generate-po');
     if (generateButton) {
         generateButton.addEventListener('click', () => {
-            if (!window.uploadedData || window.uploadedData.length === 0) {
+            if (uploadedData.length === 0) {
                 alert('Please upload a CSV file with style data.');
                 return;
             }
-            const processedData = processData(window.uploadedData);
+            const processedData = processData(uploadedData);
             generatePdf(processedData);
         });
     }
@@ -166,19 +133,13 @@ function generatePdf(groupedData) {
 
     const poDetails = {};
     const poFields = [
-        "PO Date", "Ship Date", "Cancel Date", "PO Number", "Vendor", "Origin", "Ship Terms", "Pay Terms",
+        "PO Date", "PO Number", "Ship Date", "Cancel Date", "Vendor", "Origin", "Ship Terms", "Pay Terms",
         "Destination", "Department", "Class", "Sub Class", "Label/Brand", "Season", "Year",
         "Royalty Code", "Item Description", "Top Fabric", "Bottom Fabric"
     ];
     poFields.forEach(field => {
         const id = toId(field);
-        const element = document.getElementById(id);
-        let value = element.value;
-
-        if (field === 'Origin' && value === 'Other') {
-            value = document.getElementById('origin-other').value;
-        }
-        poDetails[field] = value;
+        poDetails[field] = document.getElementById(id).value;
     });
 
     const remarks = document.getElementById('remarks-text').value;
@@ -216,10 +177,8 @@ function generatePdf(groupedData) {
         const filteredPoFields = poFields.filter(field => field !== "PO Number");
         for (let i = 0; i < filteredPoFields.length; i += 2) {
             poDetailsBody.push([
-                { content: filteredPoFields[i], styles: { fontStyle: 'bold', fillColor: '#f3f4f6' } },
-                poDetails[filteredPoFields[i]],
-                filteredPoFields[i+1] ? { content: filteredPoFields[i+1], styles: { fontStyle: 'bold', fillColor: '#f3f4f6' } } : '',
-                filteredPoFields[i+1] ? poDetails[filteredPoFields[i+1]] : ''
+                filteredPoFields[i], poDetails[filteredPoFields[i]],
+                filteredPoFields[i+1] ? filteredPoFields[i+1] : '', poDetails[filteredPoFields[i+1]] ? poDetails[filteredPoFields[i+1]] : ''
             ]);
         }
 
@@ -227,7 +186,13 @@ function generatePdf(groupedData) {
             startY: 40,
             body: poDetailsBody,
             theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 1.5 },
+            styles: { fontSize: 8, cellPadding: 1 },
+            didDrawCell: (data) => {
+                if (data.column.index % 2 === 0) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = '#f3f4f6';
+                }
+            }
         });
 
         const tableBody = group.map(row => [
@@ -250,7 +215,6 @@ function generatePdf(groupedData) {
             startY: doc.autoTable.previous.finalY + 5,
             theme: 'grid',
             styles: { fontSize: 8 },
-            headStyles: { fillColor: '#e5e7eb', textColor: '#1f2937', fontStyle: 'bold' },
             didParseCell: (data) => {
                 if (data.row.section === 'body' && data.column.index > 1) { // Right align numeric columns
                     data.cell.styles.halign = 'right';
@@ -262,35 +226,35 @@ function generatePdf(groupedData) {
                     doc.text("PURCHASE ORDER (cont.)", 200, 22, { align: 'right' });
                 }
 
-                // Page totals - Correctly filter rows for the current page
+                // Page totals - Filter rows belonging to the current page
                 const pageRows = data.table.body.filter(row => row.pageNumber === data.pageNumber);
-                const pagePcs = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[2].content.replace(/,/g, '') || 0), 0);
-                const pageDz = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[5].content.replace(/,/g, '') || 0), 0);
-                const pageAmount = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[6].content.replace(/,/g, '') || 0), 0);
+                const pagePcs = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[2].text || 0), 0);
+                const pageDz = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[5].text || 0), 0);
+                const pageAmount = pageRows.reduce((sum, row) => sum + parseFloat(row.cells[6].text || 0), 0);
 
                 const finalY = doc.autoTable.previous.finalY;
+                doc.autoTable({
+                    body: [
+                        ['Totals', '', pagePcs.toFixed(0), '', '', pageDz.toFixed(2), pageAmount.toFixed(2), '', '', '', '']
+                    ],
+                    startY: finalY + 2,
+                    startY: doc.internal.pageSize.height - 30,
+                    theme: 'grid',
+                    styles: { fontSize: 8, fontStyle: 'bold' },
+                    didParseCell: (cellData) => {
+                         if (cellData.column.index > 1) {
+                            cellData.cell.styles.halign = 'right';
+                         }
+                    }
+                });
 
-                if (finalY < doc.internal.pageSize.height - 80) { // Add space to avoid overlap
-                    doc.autoTable({
-                        body: [['Page Totals', '', pagePcs.toFixed(0), '', '', pageDz.toFixed(2), pageAmount.toFixed(2), '', '', '', '']],
-                        startY: finalY + 2,
-                        theme: 'grid',
-                        styles: { fontSize: 8, fontStyle: 'bold' },
-                        didParseCell: (cellData) => {
-                             if (cellData.column.index > 1) {
-                                cellData.cell.styles.halign = 'right';
-                             }
-                        }
-                    });
+                const bottomContentY = doc.autoTable.previous.finalY + 8;
+                doc.rect(14, bottomContentY, 50, 40); // Image box
+                doc.text("Remarks:", 70, bottomContentY + 5);
+                doc.text(remarks, 70, bottomContentY + 10, { maxWidth: 120 });
 
-                    const bottomContentY = doc.autoTable.previous.finalY + 10;
-                    doc.rect(14, bottomContentY, 60, 50); // Image box - 2x size
-                    doc.text("Remarks:", 80, bottomContentY + 5);
-                    doc.text(remarks, 80, bottomContentY + 10, { maxWidth: 110 });
-
-                    doc.text("Testing Notice:", 14, bottomContentY + 60);
-                    doc.text(companyInfo.notice, 14, bottomContentY + 65, { maxWidth: 180 });
-                }
+                doc.text("Testing Notice:", 14, bottomContentY + 48);
+                doc.text(companyInfo.notice, 14, bottomContentY + 53, { maxWidth: 180 });
             }
         });
     }
