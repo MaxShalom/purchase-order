@@ -46,6 +46,10 @@
             outline: none; border-color: #6366f1; 
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
+        .input-field.error {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
         .section-header {
             font-size: 1.25rem; font-weight: 700; color: #0f172a; 
             border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.5rem;
@@ -89,6 +93,25 @@
             return d.toISOString().split('T')[0];
         };
 
+        const DEPARTMENT_OPTIONS = [
+            "01 - BOYS",
+            "02 - GIRLS",
+            "03 - DDG",
+            "04 - DELIAS SPORTSWEAR",
+            "05 - DOLLHOUSE",
+            "06 - ENYCE",
+            "07 - UNIFORMS",
+            "08 - MENS",
+            "09 - LADIES",
+            "10 - GIRLS SLEEP - GENERIC",
+            "11 - BOYS SLEEP-GENERIC",
+            "12 - GIRLS UNDERWEAR AND",
+            "13 - BOYS UNDERWEAR",
+            "14 - DELIAS SLEEP",
+            "15 - DELIAS UNDERWEAR",
+            "16 - MENS UNDERWEAR/SL"
+        ];
+
         function App() {
             // --- STATE ---
             
@@ -105,14 +128,15 @@
                 cancelDate: getCancelDefault(getShipDefault()),
                 poNumber: "",
                 vendor: "",
-                origin: "China",
+                origin: "", 
                 originOther: "",
-                shipTerms: "FOB",
+                shipTerms: "", 
                 shipTermsOther: "",
-                payTerms: "Net 30",
+                payTerms: "", 
                 payTermsOther: "",
                 destination: "NY",
-                department: "",
+                department: "", 
+                gender: "",
                 class: "",
                 subClass: "",
                 labelBrand: "",
@@ -125,9 +149,13 @@
             });
 
             const [csvData, setCsvData] = useState([]);
+            // New State for Images: { "StyleNumber1": "base64string...", "StyleNumber2": "..." }
+            const [styleImages, setStyleImages] = useState({});
+            
             const [remarks, setRemarks] = useState("");
             const [fileName, setFileName] = useState("");
             const [isDragActive, setIsDragActive] = useState(false);
+            const [errors, setErrors] = useState({});
 
             // Update cancel date when ship date changes
             useEffect(() => {
@@ -141,6 +169,52 @@
 
             const handleInput = (e) => {
                 setPoDetails({ ...poDetails, [e.target.name]: e.target.value });
+                if (errors[e.target.name]) {
+                    setErrors(prev => ({ ...prev, [e.target.name]: null }));
+                }
+            };
+
+            // Handle Image Upload per style
+            const handleImageUpload = (styleNum, file) => {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setStyleImages(prev => ({
+                        ...prev,
+                        [styleNum]: reader.result // This is the Data URL (base64)
+                    }));
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // NEW: Handle Paste from Clipboard
+            const handlePaste = async (styleNum) => {
+                try {
+                    // Request clipboard access (browser will prompt user)
+                    const clipboardItems = await navigator.clipboard.read();
+                    
+                    for (const item of clipboardItems) {
+                        // Look for image types
+                        const imageType = item.types.find(type => type.startsWith('image/'));
+                        
+                        if (imageType) {
+                            const blob = await item.getType(imageType);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setStyleImages(prev => ({
+                                    ...prev,
+                                    [styleNum]: reader.result
+                                }));
+                            };
+                            reader.readAsDataURL(blob);
+                            return; // Stop after finding the first image
+                        }
+                    }
+                    alert("No image found in clipboard. Please copy an image first.");
+                } catch (err) {
+                    console.error(err);
+                    alert("Unable to paste. Please ensure you granted clipboard permission or try uploading the file manually.");
+                }
             };
 
             const parseFile = (file) => {
@@ -162,6 +236,8 @@
                             };
                         });
                         setCsvData(processed);
+                        // Reset images on new upload
+                        setStyleImages({});
                     }
                 });
             };
@@ -193,28 +269,42 @@
                 window.URL.revokeObjectURL(url);
             };
 
+            // --- VALIDATION ---
+            const validateForm = () => {
+                const newErrors = {};
+                if (!poDetails.shipTerms) newErrors.shipTerms = true;
+                if (!poDetails.payTerms) newErrors.payTerms = true;
+                if (!poDetails.origin) newErrors.origin = true;
+                if (!poDetails.department) newErrors.department = true;
+                
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
             // --- PDF GENERATION ---
             const generatePDF = () => {
+                if (!validateForm()) {
+                    alert("Please select all required fields (Ship Terms, Pay Terms, Origin, Department) before generating.");
+                    return;
+                }
+
                 const { jsPDF } = window.jspdf;
-                // Initialize with US Letter format
                 const doc = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: 'letter' // 8.5 x 11 inches
+                    format: 'letter' 
                 });
 
-                const pageWidth = doc.internal.pageSize.getWidth(); // ~215.9mm
-                const pageHeight = doc.internal.pageSize.getHeight(); // ~279.4mm
-                const margin = 14;
+                const pageWidth = doc.internal.pageSize.getWidth(); 
+                const pageHeight = doc.internal.pageSize.getHeight(); 
+                const margin = 20; 
                 const contentWidth = pageWidth - (margin * 2);
                 const rightAlignX = pageWidth - margin;
 
-                // Resolve Dropdown + Other fields
                 const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
                 const finalShipTerms = poDetails.shipTerms === "Other" ? poDetails.shipTermsOther : poDetails.shipTerms;
                 const finalPayTerms = poDetails.payTerms === "Other" ? poDetails.payTermsOther : poDetails.payTerms;
 
-                // Group Data by Style
                 const styles = {};
                 csvData.forEach(row => {
                     const styleNum = row['Style Number'];
@@ -227,12 +317,10 @@
 
                     const styleRows = styles[styleNum];
                     
-                    // Calculate Page Totals
                     let tPcs = 0, tDz = 0, tAmt = 0;
                     styleRows.forEach(r => { tPcs += r.pcs; tDz += parseFloat(r.dz); tAmt += parseFloat(r.amount); });
 
-                    // 1. Header Section
-                    // Left Side: Company
+                    // Header
                     doc.setFontSize(14);
                     doc.setFont("helvetica", "bold");
                     doc.text(globalData.companyName, margin, 15);
@@ -244,7 +332,6 @@
                     doc.text(globalData.phone, margin, 24);
                     doc.setTextColor(0);
 
-                    // Right Side: Purchase Order Title + Number
                     doc.setFontSize(16);
                     doc.setFont("helvetica", "bold");
                     doc.text("PURCHASE ORDER", rightAlignX, 15, { align: "right" });
@@ -253,8 +340,7 @@
                     doc.text(`PO #: ${poDetails.poNumber}`, rightAlignX, 22, { align: "right" });
                     doc.setTextColor(0);
 
-                    // 2. Sleek Date Strip
-                    // Using a clean horizontal layout
+                    // Date Strip
                     doc.setDrawColor(220);
                     doc.line(margin, 30, rightAlignX, 30);
                     
@@ -278,7 +364,7 @@
                     
                     doc.line(margin, 44, rightAlignX, 44);
 
-                    // 3. General Info Grid
+                    // Info Grid
                     const headerData = [
                         [
                             { content: 'Vendor:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
@@ -301,12 +387,18 @@
                          [
                             { content: 'Department:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
                             poDetails.department,
-                            { content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.class,
+                            { content: 'Gender:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.gender,
                         ],
                         [
+                            { content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.class,
                             { content: 'Sub Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
                             poDetails.subClass,
+                        ],
+                        [
+                            { content: 'Label / Brand:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.labelBrand,
                             { content: 'Royalty Code:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
                             poDetails.royaltyCode,
                         ],
@@ -334,44 +426,28 @@
                             lineWidth: 0.1
                         },
                         columnStyles: {
-                            0: { cellWidth: 25 }, // Label width
-                            1: { cellWidth: (contentWidth - 50) / 2 }, // Value width (dynamic)
+                            0: { cellWidth: 25 }, 
+                            1: { cellWidth: (contentWidth - 50) / 2 }, 
                             2: { cellWidth: 25 },
                             3: { cellWidth: (contentWidth - 50) / 2 }
                         }
                     });
 
-                    // 4. Style Data Table
-                    let y = doc.lastAutoTable.finalY + 10;
-                    
-                    // Image Box Logic
-                    const imgBoxW = 35;
-                    const imgBoxH = 30;
-                    const imgBoxX = rightAlignX - imgBoxW;
-                    
-                    doc.setDrawColor(200);
-                    doc.setLineWidth(0.2);
-                    doc.rect(imgBoxX, doc.lastAutoTable.finalY + 2, imgBoxW, imgBoxH);
-                    doc.setFontSize(6);
-                    doc.setTextColor(150);
-                    doc.text("Paste Image Here", imgBoxX + (imgBoxW/2), doc.lastAutoTable.finalY + (imgBoxH/2) + 2, { align: 'center' });
-                    doc.setTextColor(0);
-
-                    // Data Table
+                    // Style Data Table
                     const tableBody = styleRows.map(row => [
                         row['Style Number'],
                         row['Sizes'],
                         row['Inner Colorway 1'],
                         row['Inner Colorway 2'],
-                        row['Master Packing'] || '-', // Master Pack
-                        row['Inner Packing'] || '-', // Inner Pack
+                        row['Master Packing'] || '-', 
+                        row['Inner Packing'] || '-', 
                         row.pcs,
                         `$${row.price.toFixed(2)}`,
                         `$${row.amount}`
                     ]);
 
                     doc.autoTable({
-                        startY: doc.lastAutoTable.finalY + 40,
+                        startY: doc.lastAutoTable.finalY + 10,
                         head: [['Style #', 'Size', 'Color 1', 'Color 2', 'Master Pk', 'Inner Pk', 'Pcs', 'Price', 'Amount']],
                         body: tableBody,
                         theme: 'grid',
@@ -386,10 +462,41 @@
                         }
                     });
 
-                    // 5. Page Totals
-                    let finalY = doc.lastAutoTable.finalY + 5;
+                    // Image Box Logic
+                    const boxY = doc.lastAutoTable.finalY + 10;
+                    const boxW = 60; 
+                    const boxH = 60; 
+                    const boxX = (pageWidth - boxW) / 2; 
+
+                    // Check if we have an uploaded image for this style
+                    const uploadedImg = styleImages[styleNum];
+
+                    if (uploadedImg) {
+                        // Add the uploaded image
+                        doc.addImage(uploadedImg, 'JPEG', boxX, boxY, boxW, boxH);
+                        // Optional: Add a border around it
+                        doc.setDrawColor(200);
+                        doc.setLineWidth(0.1);
+                        doc.rect(boxX, boxY, boxW, boxH);
+                    } else {
+                        // Draw placeholder if no image
+                        doc.setDrawColor(200);
+                        doc.setLineWidth(0.2);
+                        doc.rect(boxX, boxY, boxW, boxH);
+                        doc.setFontSize(8);
+                        doc.setTextColor(150);
+                        doc.text("Paste Image / Swatch Here", pageWidth / 2, boxY + (boxH/2), { align: 'center' });
+                        doc.setTextColor(0);
+                    }
+
+                    // Page Totals
+                    let finalY = boxY + boxH + 10; 
                     
-                    // Draw a sleek total bar
+                    if (finalY + 40 > pageHeight) {
+                        doc.addPage();
+                        finalY = 20;
+                    }
+
                     doc.setFillColor(248, 250, 252);
                     doc.rect(margin, finalY, contentWidth, 12, 'F');
                     
@@ -399,40 +506,42 @@
                     
                     doc.setFont("helvetica", "normal");
                     
-                    // Dynamic Positioning
                     const unitsX = margin + (contentWidth * 0.35);
                     const dozX = margin + (contentWidth * 0.55);
-                    const totalX = rightAlignX - 2; // Slightly padded from right
+                    const totalX = rightAlignX - 2; 
 
                     doc.text(`Units: ${tPcs}`, unitsX, finalY + 8);
                     doc.text(`Dozens: ${tDz.toFixed(2)}`, dozX, finalY + 8);
-                    
-                    // Amount (Right Aligned)
                     doc.setFont("helvetica", "bold");
                     doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, finalY + 8, { align: 'right' });
 
-                    // 6. Footer (Remarks & Legal)
-                    // Remarks
+                    // Footer
                     doc.setDrawColor(220);
-                    doc.roundedRect(margin, pageHeight - 55, contentWidth, 20, 1, 1);
+                    const remarksBoxY = finalY + 18;
+                    
+                    doc.roundedRect(margin, remarksBoxY, contentWidth, 20, 1, 1);
                     doc.setFontSize(8);
                     doc.setFont("helvetica", "bold");
-                    doc.text("Remarks:", margin + 2, pageHeight - 50);
+                    doc.text("Remarks:", margin + 2, remarksBoxY + 5);
                     doc.setFont("helvetica", "normal");
                     const remarksText = remarks.trim() || "No remarks";
-                    doc.text(remarksText, margin + 18, pageHeight - 50, { maxWidth: contentWidth - 22 });
+                    doc.text(remarksText, margin + 18, remarksBoxY + 5, { maxWidth: contentWidth - 22 });
 
-                    // CPSIA
                     doc.setFontSize(8);
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(0);
                     const legalText = globalData.legal.replace(/\n/g, " "); 
                     const splitLegal = doc.splitTextToSize(legalText, contentWidth);
-                    doc.text(splitLegal, pageWidth / 2, pageHeight - 20, { align: "center" });
+                    doc.text(splitLegal, pageWidth / 2, remarksBoxY + 28, { align: "center" });
                 });
 
                 doc.save(`PO_${poDetails.poNumber || 'Draft'}.pdf`);
             };
+            
+            // Helper to get unique styles for image upload
+            const uniqueStyles = csvData.length > 0 
+                ? [...new Set(csvData.map(item => item['Style Number']))] 
+                : [];
 
             return (
                 <div className="max-w-5xl mx-auto my-10 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
@@ -451,6 +560,7 @@
                                 1. Order Specifics
                             </div>
                             
+                            {/* Inputs omitted for brevity, same as before */}
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                  <div>
                                     <label className="input-label">PO Number</label>
@@ -481,8 +591,9 @@
                             {/* Row 3: Dropdowns for Terms */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <div>
-                                    <label className="input-label">Ship Terms</label>
-                                    <select name="shipTerms" value={poDetails.shipTerms} onChange={handleInput} className="input-field">
+                                    <label className="input-label">Ship Terms <span className="text-red-500">*</span></label>
+                                    <select name="shipTerms" value={poDetails.shipTerms} onChange={handleInput} className={`input-field ${errors.shipTerms ? 'error' : ''}`}>
+                                        <option value="" disabled>Select...</option>
                                         <option value="FOB">FOB</option>
                                         <option value="DDP">DDP</option>
                                         <option value="LDP">LDP</option>
@@ -494,8 +605,9 @@
                                     )}
                                 </div>
                                 <div>
-                                    <label className="input-label">Pay Terms</label>
-                                    <select name="payTerms" value={poDetails.payTerms} onChange={handleInput} className="input-field">
+                                    <label className="input-label">Pay Terms <span className="text-red-500">*</span></label>
+                                    <select name="payTerms" value={poDetails.payTerms} onChange={handleInput} className={`input-field ${errors.payTerms ? 'error' : ''}`}>
+                                        <option value="" disabled>Select...</option>
                                         <option value="Net 30">Net 30</option>
                                         <option value="Net 60">Net 60</option>
                                         <option value="L/C">L/C</option>
@@ -508,8 +620,9 @@
                                     )}
                                 </div>
                                 <div>
-                                    <label className="input-label">Origin</label>
-                                    <select name="origin" value={poDetails.origin} onChange={handleInput} className="input-field">
+                                    <label className="input-label">Origin <span className="text-red-500">*</span></label>
+                                    <select name="origin" value={poDetails.origin} onChange={handleInput} className={`input-field ${errors.origin ? 'error' : ''}`}>
+                                        <option value="" disabled>Select...</option>
                                         <option value="Egypt">Egypt</option>
                                         <option value="Bangladesh">Bangladesh</option>
                                         <option value="China">China</option>
@@ -526,6 +639,24 @@
                             {/* Row 4: Categorization */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                                 <div>
+                                    <label className="input-label">Department <span className="text-red-500">*</span></label>
+                                    <select name="department" value={poDetails.department} onChange={handleInput} className={`input-field ${errors.department ? 'error' : ''}`}>
+                                        <option value="" disabled>Select...</option>
+                                        {DEPARTMENT_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="input-label">Gender</label>
+                                    <select name="gender" value={poDetails.gender} onChange={handleInput} className="input-field">
+                                        <option value="" disabled>Select...</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Unisex">Unisex</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="input-label">Season</label>
                                     <select name="season" value={poDetails.season} onChange={handleInput} className="input-field">
                                         <option value="Spring">Spring</option>
@@ -538,6 +669,10 @@
                                     <label className="input-label">Year</label>
                                     <input type="number" name="year" value={poDetails.year} onChange={handleInput} className="input-field" />
                                 </div>
+                            </div>
+                            
+                            {/* Row 5: Product Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                                 <div>
                                     <label className="input-label">Destination</label>
                                     <select name="destination" value={poDetails.destination} onChange={handleInput} className="input-field">
@@ -545,18 +680,6 @@
                                         <option value="LA">Los Angeles (LA)</option>
                                         <option value="Other">Other</option>
                                     </select>
-                                </div>
-                                <div>
-                                     <label className="input-label">Royalty Code</label>
-                                    <input type="text" name="royaltyCode" placeholder="e.g. N/A" value={poDetails.royaltyCode} onChange={handleInput} className="input-field" />
-                                </div>
-                            </div>
-
-                            {/* Row 5: Product Details */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                                <div>
-                                    <label className="input-label">Department</label>
-                                    <input type="text" name="department" placeholder="e.g. Mens" value={poDetails.department} onChange={handleInput} className="input-field" />
                                 </div>
                                 <div>
                                     <label className="input-label">Class</label>
@@ -567,13 +690,17 @@
                                     <input type="text" name="subClass" placeholder="e.g. Tees" value={poDetails.subClass} onChange={handleInput} className="input-field" />
                                 </div>
                                 <div>
+                                     <label className="input-label">Royalty Code</label>
+                                    <input type="text" name="royaltyCode" placeholder="e.g. N/A" value={poDetails.royaltyCode} onChange={handleInput} className="input-field" />
+                                </div>
+                            </div>
+
+                            {/* Row 6: Label & Fabrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                                <div>
                                     <label className="input-label">Label / Brand</label>
                                     <input type="text" name="labelBrand" placeholder="e.g. Allura" value={poDetails.labelBrand} onChange={handleInput} className="input-field" />
                                 </div>
-                            </div>
-                            
-                            {/* Row 6: Fabrics */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div>
                                     <label className="input-label">Item Description</label>
                                     <input type="text" name="itemDesc" placeholder="e.g. Crew Neck Tee" value={poDetails.itemDesc} onChange={handleInput} className="input-field" />
@@ -658,12 +785,59 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-2 italic">Verify the calculations above before generating PDF.</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* SECTION 3: Finish */}
+                        {/* SECTION 3: Style Images (NEW) */}
+                        {uniqueStyles.length > 0 && (
+                            <div>
+                                <div className="section-header">
+                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    3. Style Images
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {uniqueStyles.map(style => (
+                                        <div key={style} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                            <div className="font-bold text-slate-700 mb-2">Style #: {style}</div>
+                                            
+                                            {/* Input Group with Paste Button */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={(e) => handleImageUpload(style, e.target.files[0])}
+                                                    className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                                />
+                                                <button
+                                                    onClick={() => handlePaste(style)}
+                                                    className="bg-white border border-slate-300 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 p-2 rounded-full shadow-sm transition"
+                                                    title="Paste image from clipboard"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                                </button>
+                                            </div>
+
+                                            {styleImages[style] ? (
+                                                <div className="mt-3 h-32 w-full bg-white border rounded flex items-center justify-center overflow-hidden relative">
+                                                    <img src={styleImages[style]} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                                    <button 
+                                                        onClick={() => setStyleImages(prev => { const n = {...prev}; delete n[style]; return n; })}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                                    >✕</button>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-3 h-32 w-full bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-xs">
+                                                    No Image Selected
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SECTION 4: Finish */}
                         <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
                             <div className="mb-6">
                                 <div className="flex justify-between items-center mb-1">
