@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allura Imports - Professional PO Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Google Fonts: Inter for that clean, sleek look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            background-color: #f8fafc; 
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .input-group { margin-bottom: 1rem; }
+        .input-label {
+            display: block; font-size: 0.75rem; font-weight: 600; 
+            text-transform: uppercase; letter-spacing: 0.05em; 
+            color: #475569; margin-bottom: 0.25rem;
+        }
+        .input-field {
+            width: 100%; padding: 0.6rem 0.75rem; 
+            border: 1px solid #e2e8f0; border-radius: 0.375rem; 
+            font-size: 0.9rem; color: #1e293b; background-color: #fff;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: none; border-color: #6366f1; 
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .section-header {
+            font-size: 1.25rem; font-weight: 700; color: #0f172a; 
+            border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.5rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #0f172a; color: white; font-weight: 600;
+            padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #334155; }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        .drag-active {
+            background-color: #eff6ff; /* blue-50 */
+            border-color: #6366f1; /* indigo-500 */
+            transform: scale(1.01);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- DATE HELPERS ---
+        const getToday = () => new Date().toISOString().split('T')[0];
+        
+        const getShipDefault = () => {
+            const d = new Date();
+            d.setMonth(d.getMonth() + 4);
+            d.setDate(1); // 1st of the month
+            return d.toISOString().split('T')[0];
+        };
+
+        const getCancelDefault = (shipDateStr) => {
+            if (!shipDateStr) return "";
+            const d = new Date(shipDateStr);
+            d.setDate(d.getDate() + 30);
+            return d.toISOString().split('T')[0];
+        };
+
+        function App() {
+            // --- STATE ---
+            
+            const [globalData, setGlobalData] = useState({
+                companyName: "Allura Imports Inc.",
+                address: "1407 Broadway Suite 401, New York, NY 10018",
+                phone: "(212) 695-4510",
+                legal: "ALL PRODUCT MUST BE LEAD FREE AS PER CPSIA REGULATIONS.\nDOCUMENTS MUST BE ACCOMPANIED BY TEST REPORT ISSUED FROM THIRD PARTY TESTING FACILITY CERTIFIYING MERCHANDISE IS COMPLIANT WITH CPSIA STANDARDS"
+            });
+
+            const [poDetails, setPoDetails] = useState({
+                poDate: getToday(),
+                shipDate: getShipDefault(),
+                cancelDate: getCancelDefault(getShipDefault()),
+                poNumber: "",
+                vendor: "",
+                origin: "China",
+                originOther: "",
+                shipTerms: "FOB",
+                shipTermsOther: "",
+                payTerms: "Net 30",
+                payTermsOther: "",
+                destination: "NY",
+                department: "",
+                class: "",
+                subClass: "",
+                labelBrand: "",
+                season: "Spring",
+                year: "2026",
+                royaltyCode: "",
+                itemDesc: "",
+                topFabric: "",
+                bottomFabric: ""
+            });
+
+            const [csvData, setCsvData] = useState([]);
+            const [remarks, setRemarks] = useState("");
+            const [fileName, setFileName] = useState("");
+            const [isDragActive, setIsDragActive] = useState(false);
+
+            // Update cancel date when ship date changes
+            useEffect(() => {
+                setPoDetails(prev => ({
+                    ...prev,
+                    cancelDate: getCancelDefault(prev.shipDate)
+                }));
+            }, [poDetails.shipDate]);
+
+            // --- HANDLERS ---
+
+            const handleInput = (e) => {
+                setPoDetails({ ...poDetails, [e.target.name]: e.target.value });
+            };
+
+            const parseFile = (file) => {
+                if (!file) return;
+                setFileName(file.name);
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        const processed = results.data.map(row => {
+                            const pcs = parseFloat(row['Pcs'] || 0);
+                            const price = parseFloat(row['Price Per Pc'] || 0);
+                            return {
+                                ...row,
+                                pcs: pcs,
+                                price: price,
+                                dz: (pcs / 12).toFixed(2),
+                                amount: (pcs * price).toFixed(2)
+                            };
+                        });
+                        setCsvData(processed);
+                    }
+                });
+            };
+
+            const handleFileUpload = (e) => {
+                parseFile(e.target.files[0]);
+            };
+
+            const handleDragEnter = (e) => { e.preventDefault(); setIsDragActive(true); };
+            const handleDragLeave = (e) => { e.preventDefault(); setIsDragActive(false); };
+            const handleDragOver = (e) => { e.preventDefault(); };
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragActive(false);
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === "text/csv" || file.name.endsWith('.csv')) {
+                    parseFile(file);
+                }
+            };
+
+            const downloadTemplate = () => {
+                const headers = "Style Number,Sizes,Pcs,Price Per Pc,Inner Colorway 1,Inner Colorway 2,Master Packing,Inner Packing\n1001,S,120,10.50,Navy,White,120pcs/ctn,12pcs/polybag";
+                const blob = new Blob([headers], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'po_template.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            // --- PDF GENERATION ---
+            const generatePDF = () => {
+                const { jsPDF } = window.jspdf;
+                // Initialize with US Letter format
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'letter' // 8.5 x 11 inches
+                });
+
+                const pageWidth = doc.internal.pageSize.getWidth(); // ~215.9mm
+                const pageHeight = doc.internal.pageSize.getHeight(); // ~279.4mm
+                const margin = 14;
+                const contentWidth = pageWidth - (margin * 2);
+                const rightAlignX = pageWidth - margin;
+
+                // Resolve Dropdown + Other fields
+                const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
+                const finalShipTerms = poDetails.shipTerms === "Other" ? poDetails.shipTermsOther : poDetails.shipTerms;
+                const finalPayTerms = poDetails.payTerms === "Other" ? poDetails.payTermsOther : poDetails.payTerms;
+
+                // Group Data by Style
+                const styles = {};
+                csvData.forEach(row => {
+                    const styleNum = row['Style Number'];
+                    if (!styles[styleNum]) styles[styleNum] = [];
+                    styles[styleNum].push(row);
+                });
+
+                Object.keys(styles).forEach((styleNum, index) => {
+                    if (index > 0) doc.addPage();
+
+                    const styleRows = styles[styleNum];
+                    
+                    // Calculate Page Totals
+                    let tPcs = 0, tDz = 0, tAmt = 0;
+                    styleRows.forEach(r => { tPcs += r.pcs; tDz += parseFloat(r.dz); tAmt += parseFloat(r.amount); });
+
+                    // 1. Header Section
+                    // Left Side: Company
+                    doc.setFontSize(14);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(globalData.companyName, margin, 15);
+                    
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(80);
+                    doc.text(globalData.address, margin, 20);
+                    doc.text(globalData.phone, margin, 24);
+                    doc.setTextColor(0);
+
+                    // Right Side: Purchase Order Title + Number
+                    doc.setFontSize(16);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("PURCHASE ORDER", rightAlignX, 15, { align: "right" });
+                    doc.setFontSize(12);
+                    doc.setTextColor(100);
+                    doc.text(`PO #: ${poDetails.poNumber}`, rightAlignX, 22, { align: "right" });
+                    doc.setTextColor(0);
+
+                    // 2. Sleek Date Strip
+                    // Using a clean horizontal layout
+                    doc.setDrawColor(220);
+                    doc.line(margin, 30, rightAlignX, 30);
+                    
+                    const dateY = 35;
+                    const thirdWidth = contentWidth / 3;
+
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(100);
+                    
+                    doc.text("PO DATE", margin, dateY);
+                    doc.text("SHIP DATE (EX-FACTORY)", margin + thirdWidth, dateY);
+                    doc.text("CANCEL DATE", margin + (thirdWidth * 2), dateY);
+                    
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0);
+                    doc.text(poDetails.poDate, margin, dateY + 5);
+                    doc.text(poDetails.shipDate, margin + thirdWidth, dateY + 5);
+                    doc.text(poDetails.cancelDate, margin + (thirdWidth * 2), dateY + 5);
+                    
+                    doc.line(margin, 44, rightAlignX, 44);
+
+                    // 3. General Info Grid
+                    const headerData = [
+                        [
+                            { content: 'Vendor:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.vendor,
+                            { content: 'Origin:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalOrigin,
+                        ],
+                        [
+                            { content: 'Ship Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalShipTerms,
+                            { content: 'Pay Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalPayTerms,
+                        ],
+                         [
+                            { content: 'Season/Year:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            `${poDetails.season} / ${poDetails.year}`,
+                            { content: 'Destination:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.destination,
+                        ],
+                         [
+                            { content: 'Department:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.department,
+                            { content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.class,
+                        ],
+                        [
+                            { content: 'Sub Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.subClass,
+                            { content: 'Royalty Code:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.royaltyCode,
+                        ],
+                         [
+                            { content: 'Item Desc:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            { content: poDetails.itemDesc, colSpan: 3 },
+                        ],
+                         [
+                            { content: 'Top Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.topFabric,
+                            { content: 'Bot Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.bottomFabric,
+                        ]
+                    ];
+
+                    doc.autoTable({
+                        startY: 48,
+                        body: headerData,
+                        theme: 'plain',
+                        margin: { left: margin, right: margin },
+                        styles: { 
+                            fontSize: 9, 
+                            cellPadding: 2,
+                            lineColor: [220, 220, 220],
+                            lineWidth: 0.1
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 25 }, // Label width
+                            1: { cellWidth: (contentWidth - 50) / 2 }, // Value width (dynamic)
+                            2: { cellWidth: 25 },
+                            3: { cellWidth: (contentWidth - 50) / 2 }
+                        }
+                    });
+
+                    // 4. Style Data Table
+                    let y = doc.lastAutoTable.finalY + 10;
+                    
+                    // Image Box Logic
+                    const imgBoxW = 35;
+                    const imgBoxH = 30;
+                    const imgBoxX = rightAlignX - imgBoxW;
+                    
+                    doc.setDrawColor(200);
+                    doc.setLineWidth(0.2);
+                    doc.rect(imgBoxX, doc.lastAutoTable.finalY + 2, imgBoxW, imgBoxH);
+                    doc.setFontSize(6);
+                    doc.setTextColor(150);
+                    doc.text("Paste Image Here", imgBoxX + (imgBoxW/2), doc.lastAutoTable.finalY + (imgBoxH/2) + 2, { align: 'center' });
+                    doc.setTextColor(0);
+
+                    // Data Table
+                    const tableBody = styleRows.map(row => [
+                        row['Style Number'],
+                        row['Sizes'],
+                        row['Inner Colorway 1'],
+                        row['Inner Colorway 2'],
+                        row['Master Packing'] || '-', // Master Pack
+                        row['Inner Packing'] || '-', // Inner Pack
+                        row.pcs,
+                        `$${row.price.toFixed(2)}`,
+                        `$${row.amount}`
+                    ]);
+
+                    doc.autoTable({
+                        startY: doc.lastAutoTable.finalY + 40,
+                        head: [['Style #', 'Size', 'Color 1', 'Color 2', 'Master Pk', 'Inner Pk', 'Pcs', 'Price', 'Amount']],
+                        body: tableBody,
+                        theme: 'grid',
+                        margin: { left: margin, right: margin },
+                        headStyles: { fillColor: [30, 41, 59], fontSize: 8, valign: 'middle', halign: 'center' },
+                        bodyStyles: { fontSize: 8, valign: 'middle', halign: 'center' },
+                        columnStyles: {
+                            0: { cellWidth: 20, fontStyle: 'bold' },
+                            1: { cellWidth: 15 },
+                            6: { cellWidth: 15 },
+                            8: { cellWidth: 25, halign: 'right' }
+                        }
+                    });
+
+                    // 5. Page Totals
+                    let finalY = doc.lastAutoTable.finalY + 5;
+                    
+                    // Draw a sleek total bar
+                    doc.setFillColor(248, 250, 252);
+                    doc.rect(margin, finalY, contentWidth, 12, 'F');
+                    
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("PAGE TOTALS", margin + 4, finalY + 8);
+                    
+                    doc.setFont("helvetica", "normal");
+                    
+                    // Dynamic Positioning
+                    const unitsX = margin + (contentWidth * 0.35);
+                    const dozX = margin + (contentWidth * 0.55);
+                    const totalX = rightAlignX - 2; // Slightly padded from right
+
+                    doc.text(`Units: ${tPcs}`, unitsX, finalY + 8);
+                    doc.text(`Dozens: ${tDz.toFixed(2)}`, dozX, finalY + 8);
+                    
+                    // Amount (Right Aligned)
+                    doc.setFont("helvetica", "bold");
+                    doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, finalY + 8, { align: 'right' });
+
+                    // 6. Footer (Remarks & Legal)
+                    // Remarks
+                    doc.setDrawColor(220);
+                    doc.roundedRect(margin, pageHeight - 55, contentWidth, 20, 1, 1);
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Remarks:", margin + 2, pageHeight - 50);
+                    doc.setFont("helvetica", "normal");
+                    const remarksText = remarks.trim() || "No remarks";
+                    doc.text(remarksText, margin + 18, pageHeight - 50, { maxWidth: contentWidth - 22 });
+
+                    // CPSIA
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0);
+                    const legalText = globalData.legal.replace(/\n/g, " "); 
+                    const splitLegal = doc.splitTextToSize(legalText, contentWidth);
+                    doc.text(splitLegal, pageWidth / 2, pageHeight - 20, { align: "center" });
+                });
+
+                doc.save(`PO_${poDetails.poNumber || 'Draft'}.pdf`);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto my-10 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
+                    {/* Header */}
+                    <div className="bg-slate-900 p-8 text-white">
+                        <h1 className="text-3xl font-bold tracking-tight">Production PO Generator</h1>
+                        <p className="text-slate-400 mt-2">Create official, compliant purchase orders in seconds.</p>
+                    </div>
+
+                    <div className="p-8 space-y-10">
+                        
+                        {/* SECTION 1: Order Specifics */}
+                        <div>
+                            <div className="section-header">
+                                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                1. Order Specifics
+                            </div>
+                            
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                 <div>
+                                    <label className="input-label">PO Number</label>
+                                    <input type="text" name="poNumber" placeholder="e.g., 450021" value={poDetails.poNumber} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Vendor Name</label>
+                                    <input type="text" name="vendor" placeholder="e.g. ABC Factories Ltd." value={poDetails.vendor} onChange={handleInput} className="input-field" />
+                                </div>
+                             </div>
+
+                            {/* Row 2: Dates */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                <div>
+                                    <label className="input-label">PO Date</label>
+                                    <input type="date" name="poDate" value={poDetails.poDate} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Ship Date (Ex-Factory)</label>
+                                    <input type="date" name="shipDate" value={poDetails.shipDate} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Cancel Date</label>
+                                    <input type="date" name="cancelDate" value={poDetails.cancelDate} onChange={handleInput} className="input-field" />
+                                </div>
+                            </div>
+
+                            {/* Row 3: Dropdowns for Terms */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                <div>
+                                    <label className="input-label">Ship Terms</label>
+                                    <select name="shipTerms" value={poDetails.shipTerms} onChange={handleInput} className="input-field">
+                                        <option value="FOB">FOB</option>
+                                        <option value="DDP">DDP</option>
+                                        <option value="LDP">LDP</option>
+                                        <option value="CIF">CIF</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    {poDetails.shipTerms === 'Other' && (
+                                        <input type="text" name="shipTermsOther" placeholder="Specify Terms" value={poDetails.shipTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="input-label">Pay Terms</label>
+                                    <select name="payTerms" value={poDetails.payTerms} onChange={handleInput} className="input-field">
+                                        <option value="Net 30">Net 30</option>
+                                        <option value="Net 60">Net 60</option>
+                                        <option value="L/C">L/C</option>
+                                        <option value="LDP">LDP</option>
+                                        <option value="TT">TT</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    {poDetails.payTerms === 'Other' && (
+                                        <input type="text" name="payTermsOther" placeholder="Specify Terms" value={poDetails.payTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="input-label">Origin</label>
+                                    <select name="origin" value={poDetails.origin} onChange={handleInput} className="input-field">
+                                        <option value="Egypt">Egypt</option>
+                                        <option value="Bangladesh">Bangladesh</option>
+                                        <option value="China">China</option>
+                                        <option value="Pakistan">Pakistan</option>
+                                        <option value="India">India</option>
+                                        <option value="Other">Other (Specify)</option>
+                                    </select>
+                                    {poDetails.origin === 'Other' && (
+                                        <input type="text" name="originOther" placeholder="Type Country..." value={poDetails.originOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Row 4: Categorization */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                                <div>
+                                    <label className="input-label">Season</label>
+                                    <select name="season" value={poDetails.season} onChange={handleInput} className="input-field">
+                                        <option value="Spring">Spring</option>
+                                        <option value="Fall">Fall</option>
+                                        <option value="Summer">Summer</option>
+                                        <option value="Holiday">Holiday</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="input-label">Year</label>
+                                    <input type="number" name="year" value={poDetails.year} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Destination</label>
+                                    <select name="destination" value={poDetails.destination} onChange={handleInput} className="input-field">
+                                        <option value="NY">New York (NY)</option>
+                                        <option value="LA">Los Angeles (LA)</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                     <label className="input-label">Royalty Code</label>
+                                    <input type="text" name="royaltyCode" placeholder="e.g. N/A" value={poDetails.royaltyCode} onChange={handleInput} className="input-field" />
+                                </div>
+                            </div>
+
+                            {/* Row 5: Product Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                                <div>
+                                    <label className="input-label">Department</label>
+                                    <input type="text" name="department" placeholder="e.g. Mens" value={poDetails.department} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Class</label>
+                                    <input type="text" name="class" placeholder="e.g. Knits" value={poDetails.class} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Sub Class</label>
+                                    <input type="text" name="subClass" placeholder="e.g. Tees" value={poDetails.subClass} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Label / Brand</label>
+                                    <input type="text" name="labelBrand" placeholder="e.g. Allura" value={poDetails.labelBrand} onChange={handleInput} className="input-field" />
+                                </div>
+                            </div>
+                            
+                            {/* Row 6: Fabrics */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="input-label">Item Description</label>
+                                    <input type="text" name="itemDesc" placeholder="e.g. Crew Neck Tee" value={poDetails.itemDesc} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Top Fabric</label>
+                                    <input type="text" name="topFabric" placeholder="e.g. 100% Cotton Jersey" value={poDetails.topFabric} onChange={handleInput} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Bottom Fabric</label>
+                                    <input type="text" name="bottomFabric" placeholder="e.g. N/A" value={poDetails.bottomFabric} onChange={handleInput} className="input-field" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SECTION 2: Upload */}
+                        <div>
+                            <div className="section-header flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <span>2. Style Data Import</span>
+                                </div>
+                                <button onClick={downloadTemplate} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline">
+                                    Download CSV Template
+                                </button>
+                            </div>
+
+                            <div 
+                                className={`border-2 border-dashed rounded-lg p-8 text-center transition relative group ${isDragActive ? 'drag-active' : 'border-slate-300 hover:bg-slate-50'}`}
+                                onDragEnter={handleDragEnter}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                <input 
+                                    type="file" 
+                                    accept=".csv" 
+                                    onChange={handleFileUpload} 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                />
+                                <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition ${isDragActive ? 'bg-indigo-500 text-white scale-110' : 'bg-indigo-100 text-indigo-600'}`}>
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <span className="text-lg font-medium text-slate-700">
+                                        {fileName ? `File Loaded: ${fileName}` : "Drop CSV file here or click to upload"}
+                                    </span>
+                                    <span className="text-sm text-slate-500">Required Columns: Style Number, Sizes, Pcs, Price Per Pc...</span>
+                                </div>
+                            </div>
+
+                            {/* CSV Preview Table */}
+                            {csvData.length > 0 && (
+                                <div className="mt-6">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <h3 className="text-sm font-bold text-slate-700">Data Preview (First 10 Rows)</h3>
+                                        <span className="text-xs text-slate-500">Total Rows: {csvData.length}</span>
+                                    </div>
+                                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                                        <table className="min-w-full text-sm text-left text-slate-600">
+                                            <thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-xs">
+                                                <tr>
+                                                    <th className="px-4 py-2">Style</th>
+                                                    <th className="px-4 py-2">Size</th>
+                                                    <th className="px-4 py-2">Color 1</th>
+                                                    <th className="px-4 py-2">Pcs</th>
+                                                    <th className="px-4 py-2">Price</th>
+                                                    <th className="px-4 py-2 text-right">Amt</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200">
+                                                {csvData.slice(0, 10).map((row, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50">
+                                                        <td className="px-4 py-2 font-medium">{row['Style Number']}</td>
+                                                        <td className="px-4 py-2">{row['Sizes']}</td>
+                                                        <td className="px-4 py-2">{row['Inner Colorway 1']}</td>
+                                                        <td className="px-4 py-2">{row.pcs}</td>
+                                                        <td className="px-4 py-2">${row.price.toFixed(2)}</td>
+                                                        <td className="px-4 py-2 text-right font-mono">${row.amount}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2 italic">Verify the calculations above before generating PDF.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* SECTION 3: Finish */}
+                        <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="input-label mb-0">Remarks / Special Instructions</label>
+                                    <span className="text-xs text-slate-500 italic">This text will be listed at the bottom of every page.</span>
+                                </div>
+                                <textarea 
+                                    value={remarks} 
+                                    onChange={(e) => setRemarks(e.target.value)} 
+                                    className="input-field h-24" 
+                                    placeholder="Enter any specific notes for the factory (e.g. 'Pack individually')..."
+                                ></textarea>
+                            </div>
+
+                            <button 
+                                onClick={generatePDF}
+                                disabled={csvData.length === 0}
+                                className="w-full btn-primary text-lg shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
