@@ -2,99 +2,86 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #f3f4f6; /* Lighter grey for a softer look */
+    background-color: #f0f2f5; /* Light greyish-blue background */
+    color: #1f2937;
 }
 
-/* Card styling */
-.card {
-    background-color: white;
-    border-radius: 12px; /* Slightly larger radius */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Ensures child elements respect the border radius */
-}
-
-.card-header {
-    font-size: 1.25rem; /* 20px */
-    font-weight: 600;
-    padding: 1rem 1.5rem; /* 16px 24px */
-    border-bottom: 1px solid #e5e7eb; /* light grey border */
-    background-color: #fafafa;
-}
-
-/* Form elements styling */
 .label {
     display: block;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     font-weight: 500;
-    color: #4b5563; /* Darker grey for labels */
+    color: #4b5563;
     margin-bottom: 0.5rem;
 }
 
-.custom-input {
+.custom-input, select {
     width: 100%;
-    padding: 0.75rem 1rem; /* 12px 16px */
+    padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem; /* More rounded corners */
+    background-color: #f9fafb; /* Light grey input background */
+    box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.custom-input:focus,
-.custom-input:focus-visible {
-    border-color: #3b82f6; /* Blue-500 */
+.custom-input:focus, select:focus {
+    border-color: #2563eb;
     outline: none;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-/* Button styles */
 .btn {
-    padding: 0.75rem 1.5rem; /* 12px 24px */
-    border-radius: 9999px; /* Pill shape */
+    padding: 0.625rem 1.25rem; /* 10px 20px */
+    border-radius: 0.5rem; /* Rounded corners */
     font-weight: 600;
     transition: all 0.2s ease-in-out;
     display: inline-block;
     text-align: center;
+    color: white;
+    border: none;
 }
 
 .btn-primary {
-    background-color: #3b82f6; /* Blue-500 */
-    color: white;
+    background-color: #0d6efd; /* Bright Blue */
 }
 
 .btn-primary:hover {
-    background-color: #2563eb; /* Blue-600 */
+    background-color: #0b5ed7;
 }
 
 .btn-secondary {
-    background-color: #4b5563; /* Gray-600 */
-    color: white;
+    background-color: #212529; /* Dark Gray */
 }
 
 .btn-secondary:hover {
-    background-color: #374151; /* Gray-700 */
+    background-color: #343a40;
 }
 
 .btn-generate {
-    background-color: #10b981; /* Emerald-500 */
-    color: white;
-    font-size: 1.125rem; /* 18px */
-    padding: 0.875rem 2rem; /* 14px 32px */
+    background-color: #0d6efd; /* Bright Blue */
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    border-radius: 9999px; /* Pill shape */
 }
 
 .btn-generate:hover {
-    background-color: #059669; /* Emerald-600 */
+    background-color: #0b5ed7;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+.card {
+    background-color: white;
+    border-radius: 0.75rem; /* Larger border radius */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #e5e7eb;
+}
 
-/* CSV Info Box */
 .csv-info {
-    background-color: #f8f9fa;
-    border: 1px dashed #d1d5db;
-    border-radius: 8px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
     padding: 1rem;
     font-size: 0.875rem;
     color: #4b5563;
-    word-wrap: break-word;
 }
