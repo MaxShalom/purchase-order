@@ -63,6 +63,14 @@
         .btn-primary:hover { background-color: #334155; }
         .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; }
         
+        .btn-secondary {
+            background-color: #fff; color: #0f172a; font-weight: 600;
+            padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background-color: #f1f5f9; border-color: #94a3b8; }
+        
         .drag-active {
             background-color: #eff6ff; /* blue-50 */
             border-color: #6366f1; /* indigo-500 */
@@ -310,6 +318,73 @@
                 return Object.keys(newErrors).length === 0;
             };
 
+            // --- CSV EXPORT LOGIC ---
+            const calculateInners = (master, inner) => {
+                if (!master || !inner) return "";
+                // Extract first number found in string
+                const m = parseInt(master.replace(/\D/g, ''));
+                const i = parseInt(inner.replace(/\D/g, ''));
+                
+                if (!isNaN(m) && !isNaN(i) && i !== 0) {
+                    return Math.floor(m / i);
+                }
+                return "";
+            };
+
+            const downloadStyleImportData = () => {
+                if (csvData.length === 0) return;
+
+                const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
+
+                const exportData = csvData.map(row => {
+                    return {
+                        "Style Number": row['Style Number'],
+                        "Pack-ID": "",
+                        "Style Description": poDetails.itemDesc,
+                        "Status": "",
+                        "Pack": row['Master Packing'],
+                        "No of Inners": calculateInners(row['Master Packing'], row['Inner Packing']),
+                        "Division": "",
+                        "Dept": poDetails.department,
+                        "Season": poDetails.season,
+                        "Year": poDetails.year,
+                        "Class": poDetails.class,
+                        "Cost Code": "",
+                        "Color": row['Inner Colorway 1'],
+                        "Size": row['Sizes'],
+                        "Quantity": row['Pcs'],
+                        "Reference": "",
+                        "Country": finalOrigin,
+                        "Group": "",
+                        "SubGroup": poDetails.subClass,
+                        "Brand": poDetails.labelBrand,
+                        "Maker Code": poDetails.vendor,
+                        "FOB Price": row['Price Per Pc'],
+                        "Selling Price": "",
+                        "MSRP": "",
+                        "Base Style": row.baseStyle,
+                        "Select Code": "",
+                        "HTS Code": "",
+                        "Royalty": poDetails.royaltyCode,
+                        "Content": poDetails.topFabric,
+                        "Construction": "",
+                        "Finish": "",
+                        "Materials": "",
+                        "Comments": remarks
+                    };
+                });
+
+                const csv = Papa.unparse(exportData);
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Style_Import_Data_${poDetails.poNumber}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+
             // --- PDF GENERATION ---
             const generatePDF = () => {
                 if (!validateForm()) {
@@ -490,16 +565,15 @@
 
                     doc.autoTable({
                         startY: descY + 13,
-                        // Added 'Dz', 'Price/Dz'
                         head: [['Style #', 'Size', 'Color 1', 'Color 2', 'Master Pk', 'Inner Pk', 'Pcs', 'Dz', 'Price', 'Price/Dz', 'Amount']],
                         body: tableBody,
                         theme: 'grid',
                         margin: { left: margin, right: margin },
-                        headStyles: { fillColor: [30, 41, 59], fontSize: 7.5, valign: 'middle', halign: 'center' }, // Smaller header font
-                        bodyStyles: { fontSize: 7.5, valign: 'middle', halign: 'center' }, // Smaller body font
+                        headStyles: { fillColor: [30, 41, 59], fontSize: 7.5, valign: 'middle', halign: 'center' }, 
+                        bodyStyles: { fontSize: 7.5, valign: 'middle', halign: 'center' }, 
                         columnStyles: {
                             0: { fontStyle: 'bold' },
-                            10: { halign: 'right' } // Amount aligned right
+                            10: { halign: 'right' } 
                         }
                     });
 
@@ -530,7 +604,6 @@
                     let finalY = boxY + boxH + 5; 
                     
                     // Optimized page break check
-                    // Footer takes ~35 units. Need to ensure we don't overwrite footer.
                     if (finalY + 45 > pageHeight) {
                         doc.addPage();
                         finalY = 20;
@@ -595,6 +668,7 @@
                                 1. Order Specifics
                             </div>
                             
+                            {/* Inputs omitted for brevity, same as before */}
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                  <div>
                                     <label className="input-label">PO Number</label>
@@ -798,7 +872,6 @@
                                             <thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-xs">
                                                 <tr>
                                                     <th className="px-4 py-2">Style</th>
-                                                    <th className="px-4 py-2">Base (Calc)</th>
                                                     <th className="px-4 py-2">Size</th>
                                                     <th className="px-4 py-2">Color 1</th>
                                                     <th className="px-4 py-2">Pcs</th>
@@ -810,7 +883,6 @@
                                                 {csvData.slice(0, 10).map((row, i) => (
                                                     <tr key={i} className="hover:bg-slate-50">
                                                         <td className="px-4 py-2 font-medium">{row['Style Number']}</td>
-                                                        <td className="px-4 py-2 text-slate-400">{row.baseStyle}</td>
                                                         <td className="px-4 py-2">{row['Sizes']}</td>
                                                         <td className="px-4 py-2">{row['Inner Colorway 1']}</td>
                                                         <td className="px-4 py-2">{row.pcs}</td>
@@ -894,14 +966,25 @@
                                 ></textarea>
                             </div>
 
-                            <button 
-                                onClick={generatePDF}
-                                disabled={csvData.length === 0}
-                                className="w-full btn-primary text-lg shadow-lg flex items-center justify-center gap-2"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
-                            </button>
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <button 
+                                    onClick={generatePDF}
+                                    disabled={csvData.length === 0}
+                                    className="flex-1 w-full btn-primary text-lg shadow-lg flex items-center justify-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
+                                </button>
+                                
+                                <button 
+                                    onClick={downloadStyleImportData}
+                                    disabled={csvData.length === 0}
+                                    className="flex-1 w-full btn-secondary text-lg shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Download Style Import Data
+                                </button>
+                            </div>
                         </div>
 
                     </div>
