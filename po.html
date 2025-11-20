@@ -82,7 +82,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- DATE HELPERS ---
         const getToday = () => new Date().toISOString().split('T')[0];
@@ -118,6 +118,27 @@
             "14 - DELIAS SLEEP",
             "15 - DELIAS UNDERWEAR",
             "16 - MENS UNDERWEAR/SL"
+        ];
+
+        // --- NEW ROYALTY OPTIONS ---
+        const ROYALTY_OPTIONS = [
+            "03 - CATERS WATCH THE W",
+            "04 - CARTERS WATCH THE",
+            "06 - Carter's Boys underwear",
+            "07 - Duck Duck Goose",
+            "08 - TOONS",
+            "09 - DOLL HOUSE",
+            "10 - DELIA-UNDERWEAR/S",
+            "11 - DELIAS SPORTSWEAR",
+            "12 - BHPC",
+            "13 - BHPC UNIFORMS",
+            "14 - CARTER'S SLEEPWEAR",
+            "15 - BASS CREEK WORKW",
+            "16 - DOLLHOUSE PJ",
+            "18 - ENYCE",
+            "19 - APPLE BOTTOMS",
+            "20 - BOBCAT",
+            "21 - SOUTHPOLE"
         ];
 
         // --- HELPER: DERIVE BASE STYLE ---
@@ -188,6 +209,54 @@
             const [fileName, setFileName] = useState("");
             const [isDragActive, setIsDragActive] = useState(false);
             const [errors, setErrors] = useState({});
+            
+            const loadFileInputRef = useRef(null);
+
+            // --- AUTO-SAVE / PERSISTENCE ---
+            
+            // Load on mount
+            useEffect(() => {
+                const savedData = localStorage.getItem("allura_po_draft");
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (parsed.poDetails) setPoDetails(parsed.poDetails);
+                        if (parsed.csvData) setCsvData(parsed.csvData);
+                        if (parsed.baseStyleMap) {
+                            // Convert array back to Set if needed, or just recalc
+                        }
+                        if (parsed.remarks) setRemarks(parsed.remarks);
+                    } catch (e) {
+                        console.error("Failed to load draft", e);
+                    }
+                }
+            }, []);
+
+            // Save on change
+            useEffect(() => {
+                const dataToSave = {
+                    poDetails,
+                    csvData,
+                    remarks
+                };
+                localStorage.setItem("allura_po_draft", JSON.stringify(dataToSave));
+            }, [poDetails, csvData, remarks]);
+
+            // Recalculate Base Map whenever CSV Data changes
+            useEffect(() => {
+                if (csvData.length > 0) {
+                    const map = {};
+                    csvData.forEach(row => {
+                        const bs = row.baseStyle;
+                        const actualStyle = row['Style Number'];
+                        if (!map[bs]) map[bs] = new Set();
+                        map[bs].add(actualStyle);
+                    });
+                    setBaseStyleMap(map);
+                } else {
+                    setBaseStyleMap({});
+                }
+            }, [csvData]);
 
             // Update cancel date when ship date changes
             useEffect(() => {
@@ -196,6 +265,46 @@
                     cancelDate: getCancelDefault(prev.shipDate)
                 }));
             }, [poDetails.shipDate]);
+
+            // --- JOB MANAGEMENT (SAVE/LOAD) ---
+
+            const saveJobFile = () => {
+                const jobData = {
+                    version: 1,
+                    dateSaved: new Date().toISOString(),
+                    poDetails,
+                    csvData,
+                    remarks,
+                };
+                
+                const blob = new Blob([JSON.stringify(jobData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PO_Job_${poDetails.poNumber || 'Draft'}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const loadJobFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (parsed.poDetails) setPoDetails(parsed.poDetails);
+                        if (parsed.csvData) setCsvData(parsed.csvData);
+                        if (parsed.remarks) setRemarks(parsed.remarks);
+                        alert("Job loaded successfully!");
+                    } catch (err) {
+                        alert("Error loading file. Is it a valid JSON job file?");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null; // Reset
+            };
 
             // --- HANDLERS ---
 
@@ -518,7 +627,7 @@
                         theme: 'plain',
                         margin: { left: margin, right: margin },
                         styles: { 
-                            fontSize: 8, // Reduced font size slightly
+                            fontSize: 8, 
                             cellPadding: 1.5,
                             lineColor: [220, 220, 220],
                             lineWidth: 0.1
@@ -548,7 +657,7 @@
                     doc.setFont("helvetica", "bold");
                     doc.text(poDetails.itemDesc.toUpperCase() || "N/A", margin + 2, descY + 7.5);
 
-                    // Style Data Table - Adjusted with New Columns
+                    // Style Data Table
                     const tableBody = styleRows.map(row => [
                         row['Style Number'],
                         row['Sizes'],
@@ -557,9 +666,9 @@
                         row['Master Packing'] || '-', 
                         row['Inner Packing'] || '-', 
                         row.pcs,
-                        row.dz, // Dozen
+                        row.dz, 
                         `$${row.price.toFixed(2)}`,
-                        `$${(row.price * 12).toFixed(2)}`, // Price/DZ
+                        `$${(row.price * 12).toFixed(2)}`, 
                         `$${row.amount}`
                     ]);
 
@@ -654,9 +763,28 @@
             return (
                 <div className="max-w-5xl mx-auto w-full md:w-auto my-4 md:my-10 bg-white rounded-lg md:rounded-xl shadow-xl overflow-hidden border border-gray-100">
                     {/* Header */}
-                    <div className="bg-slate-900 p-6 md:p-8 text-white">
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
-                        <p className="text-slate-400 mt-2 text-sm md:text-base">Create official, compliant purchase orders in seconds.</p>
+                    <div className="bg-slate-900 p-6 md:p-8 text-white flex justify-between items-center flex-wrap gap-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
+                            <p className="text-slate-400 mt-2 text-sm md:text-base">Create official, compliant purchase orders in seconds.</p>
+                        </div>
+                        {/* TOP ACTIONS for SPEED */}
+                        <div className="flex gap-2">
+                             <input type="file" accept=".json" ref={loadFileInputRef} className="hidden" onChange={loadJobFile} />
+                             <button onClick={() => loadFileInputRef.current.click()} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Load Job File
+                             </button>
+                             <button onClick={saveJobFile} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3M16 3H8v4h8V3zm0 14v-4H8v4h8z"></path></svg>
+                                Save Job File
+                             </button>
+                        </div>
+                    </div>
+                    
+                    {/* Auto-Save Notification */}
+                    <div className="bg-blue-50 px-6 py-2 text-xs text-blue-600 flex justify-between items-center border-b border-blue-100">
+                        <span><span className="font-bold">Tip:</span> Use "Save Job File" to create a template for future orders. Your current work is also auto-saved to this browser.</span>
                     </div>
 
                     <div className="p-4 md:p-8 space-y-6 md:space-y-10">
@@ -799,7 +927,17 @@
                                 </div>
                                 <div>
                                      <label className="input-label">Royalty Code</label>
-                                    <input type="text" name="royaltyCode" placeholder="e.g. N/A" value={poDetails.royaltyCode} onChange={handleInput} className="input-field" />
+                                    <select 
+                                        name="royaltyCode" 
+                                        value={poDetails.royaltyCode} 
+                                        onChange={handleInput} 
+                                        className="input-field"
+                                    >
+                                        <option value="">(None)</option>
+                                        {ROYALTY_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
