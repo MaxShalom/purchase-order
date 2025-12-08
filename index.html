@@ -3,82 +3,1138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Order Generator</title>
+    <title>Allura Imports - Professional PO Generator</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-8">
-        <h1 class="text-3xl font-bold mb-6">Purchase Order Generator</h1>
-
-        <!-- Company Information -->
-        <section id="company-info" class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Company Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="company-name" class="block text-sm font-medium text-gray-700">Company Name</label>
-                    <input type="text" id="company-name" value="Allura Imports Inc." class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                <div>
-                    <label for="company-address" class="block text-sm font-medium text-gray-700">Address</label>
-                    <input type="text" id="company-address" value="1407 Broadway Suite 401, New York, NY 10018" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                <div>
-                    <label for="company-tel" class="block text-sm font-medium text-gray-700">Telephone</label>
-                    <input type="text" id="company-tel" value="(212) 695-4510" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="testing-notice" class="block text-sm font-medium text-gray-700">Testing Notice</label>
-                    <textarea id="testing-notice" rows="4" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">ALL PRODUCT MUST BE LEAD FREE AS PER CPSIA REGULATIONS. DOCUMENTS MUST BE ACCOMPANIED BY TEST REPORT ISSUED FROM THIRD PARTY TESTING FACILITY CERTIFIYING MERCHANDISE IS COMPLIANT WITH CPSIA STANDARDS</textarea>
-                </div>
-            </div>
-        </section>
-
-        <!-- Purchase Order Details -->
-        <section id="po-details" class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Purchase Order Details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="po-details-grid">
-                <!-- Fields will be dynamically inserted here by script.js -->
-            </div>
-        </section>
-
-        <!-- Style Data Upload -->
-        <section id="style-data" class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Style Data</h2>
-            <div class="mt-4">
-                <div class="flex items-center space-x-4">
-                    <label for="csv-upload" class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                        </svg>
-                        Upload CSV
-                    </label>
-                    <input type="file" id="csv-upload" class="hidden" accept=".csv">
-                    <span id="file-name" class="text-gray-600">No file chosen</span>
-                </div>
-                <a href="template.csv" download="template.csv" class="text-indigo-500 hover:text-indigo-700 mt-3 inline-block text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                    </svg>
-                    Download CSV Template
-                </a>
-            </div>
-        </section>
-
-        <!-- Remarks -->
-        <section id="remarks" class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Remarks</h2>
-            <textarea id="remarks-text" rows="4" class="custom-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Enter any additional comments here..."></textarea>
-        </section>
-
-        <button id="generate-po" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">
-            Generate PO
-        </button>
-    </div>
-
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Google Fonts: Inter for that clean, sleek look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            background-color: #f8fafc; 
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .input-group { margin-bottom: 1rem; }
+        .input-label {
+            display: block; font-size: 0.75rem; font-weight: 600; 
+            text-transform: uppercase; letter-spacing: 0.05em; 
+            color: #475569; margin-bottom: 0.25rem;
+        }
+        .input-field {
+            width: 100%; padding: 0.6rem 0.75rem; 
+            border: 1px solid #e2e8f0; border-radius: 0.375rem; 
+            font-size: 0.9rem; color: #1e293b; background-color: #fff;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: none; border-color: #6366f1; 
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .input-field.error {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        .section-header {
+            font-size: 1.25rem; font-weight: 700; color: #0f172a; 
+            border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1.5rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #0f172a; color: white; font-weight: 600;
+            padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #334155; }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        .btn-secondary {
+            background-color: #fff; color: #0f172a; font-weight: 600;
+            padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background-color: #f1f5f9; border-color: #94a3b8; }
+        
+        .drag-active {
+            background-color: #eff6ff; /* blue-50 */
+            border-color: #6366f1; /* indigo-500 */
+            transform: scale(1.01);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- DATE HELPERS ---
+        const getToday = () => new Date().toISOString().split('T')[0];
+        
+        const getShipDefault = () => {
+            const d = new Date();
+            d.setMonth(d.getMonth() + 4);
+            d.setDate(1); // 1st of the month
+            return d.toISOString().split('T')[0];
+        };
+
+        const getCancelDefault = (shipDateStr) => {
+            if (!shipDateStr) return "";
+            const d = new Date(shipDateStr);
+            d.setDate(d.getDate() + 30);
+            return d.toISOString().split('T')[0];
+        };
+
+        const DEPARTMENT_OPTIONS = [
+            "01 - BOYS",
+            "02 - GIRLS",
+            "03 - DDG",
+            "04 - DELIAS SPORTSWEAR",
+            "05 - DOLLHOUSE",
+            "06 - ENYCE",
+            "07 - UNIFORMS",
+            "08 - MENS",
+            "09 - LADIES",
+            "10 - GIRLS SLEEP - GENERIC",
+            "11 - BOYS SLEEP-GENERIC",
+            "12 - GIRLS UNDERWEAR AND",
+            "13 - BOYS UNDERWEAR",
+            "14 - DELIAS SLEEP",
+            "15 - DELIAS UNDERWEAR",
+            "16 - MENS UNDERWEAR/SL",
+            "17 - PET" // Added as requested
+        ];
+
+        const ROYALTY_OPTIONS = [
+            "03 - CATERS WATCH THE W",
+            "04 - CARTERS WATCH THE",
+            "06 - Carter's Boys underwear",
+            "07 - Duck Duck Goose",
+            "08 - TOONS",
+            "09 - DOLL HOUSE",
+            "10 - DELIA-UNDERWEAR/S",
+            "11 - DELIAS SPORTSWEAR",
+            "12 - BHPC",
+            "13 - BHPC UNIFORMS",
+            "14 - CARTER'S SLEEPWEAR",
+            "15 - BASS CREEK WORKW",
+            "16 - DOLLHOUSE PJ",
+            "18 - ENYCE",
+            "19 - APPLE BOTTOMS",
+            "20 - BOBCAT",
+            "21 - SOUTHPOLE"
+        ];
+
+        // --- HELPER: DERIVE BASE STYLE ---
+        const getBaseStyle = (styleNum) => {
+            if (!styleNum) return "UNKNOWN";
+            const s = styleNum.trim();
+            
+            if (/^\d/.test(s)) {
+                if (s.length >= 5) {
+                    return s.substring(1, 5);
+                }
+                return s; 
+            }
+            
+            if (/^[A-Z]/i.test(s)) {
+                if (s.length >= 6) {
+                    return s.charAt(0) + s.substring(2, 6);
+                }
+                return s; 
+            }
+
+            return s;
+        };
+
+        // --- HELPER: EXTRACT NUMBER FROM STRING ---
+        // "72 (12)" -> 72
+        const extractFirstNumber = (str) => {
+            if (!str) return 0;
+            const match = str.toString().match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        };
+
+        function App() {
+            const [globalData, setGlobalData] = useState({
+                companyName: "Allura Imports Inc.",
+                address: "1407 Broadway Suite 401, New York, NY 10018",
+                phone: "(212) 695-4510",
+                legal: "ALL PRODUCT MUST BE LEAD FREE AS PER CPSIA REGULATIONS.\nDOCUMENTS MUST BE ACCOMPANIED BY TEST REPORT ISSUED FROM THIRD PARTY TESTING FACILITY CERTIFIYING MERCHANDISE IS COMPLIANT WITH CPSIA STANDARDS"
+            });
+
+            const [poDetails, setPoDetails] = useState({
+                poDate: getToday(),
+                shipDate: getShipDefault(),
+                cancelDate: getCancelDefault(getShipDefault()),
+                poNumber: "",
+                vendor: "",
+                origin: "", 
+                originOther: "",
+                shipTerms: "", 
+                shipTermsOther: "",
+                payTerms: "", 
+                payTermsOther: "",
+                destination: "NY",
+                department: "", 
+                gender: "",
+                class: "",
+                subClass: "",
+                labelBrand: "",
+                season: "Spring",
+                year: "2026",
+                royaltyCode: "",
+                itemDesc: "",
+                topFabric: "",
+                bottomFabric: ""
+            });
+
+            const [csvData, setCsvData] = useState([]);
+            const [styleImages, setStyleImages] = useState({});
+            const [baseStyleMap, setBaseStyleMap] = useState({});
+            
+            const [remarks, setRemarks] = useState("");
+            const [fileName, setFileName] = useState("");
+            const [isDragActive, setIsDragActive] = useState(false);
+            const [errors, setErrors] = useState({});
+            
+            const loadFileInputRef = useRef(null);
+
+            // --- AUTO-SAVE / PERSISTENCE ---
+            useEffect(() => {
+                const savedData = localStorage.getItem("allura_po_draft");
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (parsed.poDetails) setPoDetails(parsed.poDetails);
+                        if (parsed.csvData) setCsvData(parsed.csvData);
+                        if (parsed.remarks) setRemarks(parsed.remarks);
+                    } catch (e) {
+                        console.error("Failed to load draft", e);
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                const dataToSave = { poDetails, csvData, remarks };
+                localStorage.setItem("allura_po_draft", JSON.stringify(dataToSave));
+            }, [poDetails, csvData, remarks]);
+
+            useEffect(() => {
+                if (csvData.length > 0) {
+                    const map = {};
+                    csvData.forEach(row => {
+                        const bs = row.baseStyle;
+                        const actualStyle = row['Style Number'];
+                        if (!map[bs]) map[bs] = new Set();
+                        map[bs].add(actualStyle);
+                    });
+                    setBaseStyleMap(map);
+                } else {
+                    setBaseStyleMap({});
+                }
+            }, [csvData]);
+
+            useEffect(() => {
+                setPoDetails(prev => ({
+                    ...prev,
+                    cancelDate: getCancelDefault(prev.shipDate)
+                }));
+            }, [poDetails.shipDate]);
+
+            // --- JOB MANAGEMENT ---
+            const saveJobFile = () => {
+                const jobData = {
+                    version: 1,
+                    dateSaved: new Date().toISOString(),
+                    poDetails,
+                    csvData,
+                    remarks,
+                };
+                const blob = new Blob([JSON.stringify(jobData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PO_Job_${poDetails.poNumber || 'Draft'}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const loadJobFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (parsed.poDetails) setPoDetails(parsed.poDetails);
+                        if (parsed.csvData) setCsvData(parsed.csvData);
+                        if (parsed.remarks) setRemarks(parsed.remarks);
+                        alert("Job loaded successfully!");
+                    } catch (err) {
+                        alert("Error loading file.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null; 
+            };
+
+            // Clear Functions
+            const clearHeader = () => {
+                if(confirm("Clear only the header (Order Specifics)?")) {
+                    setPoDetails({
+                        poDate: getToday(),
+                        shipDate: getShipDefault(),
+                        cancelDate: getCancelDefault(getShipDefault()),
+                        poNumber: "", vendor: "", origin: "", originOther: "",
+                        shipTerms: "", shipTermsOther: "", payTerms: "", payTermsOther: "",
+                        destination: "NY", department: "", gender: "", class: "", subClass: "",
+                        labelBrand: "", season: "Spring", year: "2026", royaltyCode: "",
+                        itemDesc: "", topFabric: "", bottomFabric: ""
+                    });
+                }
+            };
+
+            const clearImport = () => {
+                if(confirm("Clear imported data and images?")) {
+                    setCsvData([]);
+                    setStyleImages({});
+                    setFileName("");
+                    setBaseStyleMap({});
+                }
+            };
+
+            // --- HANDLERS ---
+            const handleInput = (e) => {
+                setPoDetails({ ...poDetails, [e.target.name]: e.target.value });
+                if (errors[e.target.name]) {
+                    setErrors(prev => ({ ...prev, [e.target.name]: null }));
+                }
+            };
+
+            const handleImageUpload = (baseStyle, file) => {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setStyleImages(prev => ({
+                        ...prev,
+                        [baseStyle]: reader.result 
+                    }));
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handlePaste = async (baseStyle) => {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const item of clipboardItems) {
+                        const imageType = item.types.find(type => type.startsWith('image/'));
+                        if (imageType) {
+                            const blob = await item.getType(imageType);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setStyleImages(prev => ({
+                                    ...prev,
+                                    [baseStyle]: reader.result
+                                }));
+                            };
+                            reader.readAsDataURL(blob);
+                            return; 
+                        }
+                    }
+                    alert("No image found in clipboard.");
+                } catch (err) {
+                    alert("Unable to paste. Please ensure you granted permission.");
+                }
+            };
+
+            const parseFile = (file) => {
+                if (!file) return;
+                setFileName(file.name);
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        const processed = results.data.map(row => {
+                            const pcs = parseFloat(row['Pcs'] || 0);
+                            const price = parseFloat(row['Price Per Pc'] || 0);
+                            const baseStyle = getBaseStyle(row['Style Number']);
+                            return {
+                                ...row,
+                                baseStyle: baseStyle, 
+                                pcs: pcs,
+                                price: price,
+                                dz: (pcs / 12).toFixed(2),
+                                amount: (pcs * price).toFixed(2)
+                            };
+                        });
+                        setCsvData(processed);
+                        setStyleImages({});
+                    }
+                });
+            };
+
+            const handleFileUpload = (e) => {
+                parseFile(e.target.files[0]);
+            };
+
+            const handleDragEnter = (e) => { e.preventDefault(); setIsDragActive(true); };
+            const handleDragLeave = (e) => { e.preventDefault(); setIsDragActive(false); };
+            const handleDragOver = (e) => { e.preventDefault(); };
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragActive(false);
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === "text/csv" || file.name.endsWith('.csv')) {
+                    parseFile(file);
+                }
+            };
+
+            const downloadTemplate = () => {
+                const headers = "Style Number,Sizes,Pcs,Price Per Pc,Inner Colorway 1,Inner Colorway 2,Master Packing,Inner Packing\n1001,S,120,10.50,Navy,White,120pcs/ctn,12pcs/polybag";
+                const blob = new Blob([headers], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'po_template.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            const validateForm = () => {
+                const newErrors = {};
+                if (!poDetails.shipTerms) newErrors.shipTerms = true;
+                if (!poDetails.payTerms) newErrors.payTerms = true;
+                if (!poDetails.origin) newErrors.origin = true;
+                if (!poDetails.department) newErrors.department = true;
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const calculateInners = (master, inner) => {
+                if (!master) return "";
+                
+                // 1. Check for paren format like "72 (12)" -> return 12
+                const parenMatch = master.toString().match(/\((\d+)\)/);
+                if (parenMatch) {
+                    return parseInt(parenMatch[1], 10);
+                }
+
+                // 2. Fallback to calculation
+                const m = extractFirstNumber(master);
+                const i = extractFirstNumber(inner);
+                if (m > 0 && i > 0) return Math.floor(m / i);
+                
+                return "";
+            };
+
+            const downloadStyleImportData = () => {
+                if (csvData.length === 0) return;
+                const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
+                const exportData = csvData.map(row => {
+                    return {
+                        "Style Number": row['Style Number'],
+                        "Pack-ID": "",
+                        "Style Description": poDetails.itemDesc,
+                        "Status": "",
+                        "Pack": row['Master Packing'],
+                        "No of Inners": calculateInners(row['Master Packing'], row['Inner Packing']),
+                        "Division": "",
+                        "Dept": poDetails.department,
+                        "Season": poDetails.season,
+                        "Year": poDetails.year,
+                        "Class": poDetails.class,
+                        "Cost Code": "",
+                        "Color": row['Inner Colorway 1'],
+                        "Size": row['Sizes'],
+                        "Quantity": row['Pcs'],
+                        "Reference": "",
+                        "Country": finalOrigin,
+                        "Group": "",
+                        "SubGroup": poDetails.subClass,
+                        "Brand": poDetails.labelBrand,
+                        "Maker Code": poDetails.vendor,
+                        "FOB Price": row['Price Per Pc'],
+                        "Selling Price": "",
+                        "MSRP": "",
+                        "Base Style": row.baseStyle,
+                        "Select Code": "",
+                        "HTS Code": "",
+                        "Royalty": poDetails.royaltyCode,
+                        "Content": poDetails.topFabric,
+                        "Construction": "",
+                        "Finish": "",
+                        "Materials": "",
+                        "Comments": remarks
+                    };
+                });
+                const csv = Papa.unparse(exportData);
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Style_Import_Data_${poDetails.poNumber}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            const generatePDF = () => {
+                if (!validateForm()) {
+                    alert("Please select all required fields (Ship Terms, Pay Terms, Origin, Department) before generating.");
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+                const pageWidth = doc.internal.pageSize.getWidth(); 
+                const pageHeight = doc.internal.pageSize.getHeight(); 
+                const margin = 20; 
+                const contentWidth = pageWidth - (margin * 2);
+                const rightAlignX = pageWidth - margin;
+
+                const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
+                const finalShipTerms = poDetails.shipTerms === "Other" ? poDetails.shipTermsOther : poDetails.shipTerms;
+                const finalPayTerms = poDetails.payTerms === "Other" ? poDetails.payTermsOther : poDetails.payTerms;
+
+                const groupedStyles = {};
+                csvData.forEach(row => {
+                    const bs = row.baseStyle;
+                    if (!groupedStyles[bs]) groupedStyles[bs] = [];
+                    groupedStyles[bs].push(row);
+                });
+                
+                const baseKeys = Object.keys(groupedStyles);
+
+                baseKeys.forEach((baseStyle, index) => {
+                    if (index > 0) doc.addPage();
+
+                    const styleRows = groupedStyles[baseStyle].sort((a, b) => a['Style Number'].localeCompare(b['Style Number']));
+                    let tPcs = 0, tDz = 0, tAmt = 0;
+                    styleRows.forEach(r => { tPcs += r.pcs; tDz += parseFloat(r.dz); tAmt += parseFloat(r.amount); });
+
+                    // Header
+                    doc.setFontSize(14);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(globalData.companyName, margin, 15);
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(80);
+                    doc.text(globalData.address, margin, 20);
+                    doc.text(globalData.phone, margin, 24);
+                    doc.setTextColor(0);
+
+                    doc.setFontSize(16);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("PURCHASE ORDER", rightAlignX, 15, { align: "right" });
+                    doc.setFontSize(12);
+                    doc.setTextColor(100);
+                    doc.text(`PO #: ${poDetails.poNumber}`, rightAlignX, 22, { align: "right" });
+                    doc.setTextColor(0);
+
+                    // Date Strip
+                    doc.setDrawColor(220);
+                    doc.line(margin, 30, rightAlignX, 30);
+                    const dateY = 35;
+                    const thirdWidth = contentWidth / 3;
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(100);
+                    doc.text("PO DATE", margin, dateY);
+                    doc.text("SHIP DATE (EX-FACTORY)", margin + thirdWidth, dateY);
+                    doc.text("CANCEL DATE", margin + (thirdWidth * 2), dateY);
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0);
+                    doc.text(poDetails.poDate, margin, dateY + 5);
+                    doc.text(poDetails.shipDate, margin + thirdWidth, dateY + 5);
+                    doc.text(poDetails.cancelDate, margin + (thirdWidth * 2), dateY + 5);
+                    doc.line(margin, 44, rightAlignX, 44);
+
+                    // Info Grid
+                    const headerData = [
+                        [
+                            { content: 'Vendor:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.vendor,
+                            { content: 'Origin:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalOrigin,
+                        ],
+                        [
+                            { content: 'Ship Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalShipTerms,
+                            { content: 'Pay Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            finalPayTerms,
+                        ],
+                         [
+                            { content: 'Season/Year:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            `${poDetails.season} / ${poDetails.year}`,
+                            { content: 'Destination:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.destination,
+                        ],
+                         [
+                            { content: 'Department:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.department,
+                            { content: 'Gender:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.gender,
+                        ],
+                        [
+                            { content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.class,
+                            { content: 'Sub Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.subClass,
+                        ],
+                        [
+                            { content: 'Label / Brand:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.labelBrand,
+                            { content: 'Royalty Code:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.royaltyCode,
+                        ],
+                         [
+                            { content: 'Top Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.topFabric,
+                            { content: 'Bot Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
+                            poDetails.bottomFabric,
+                        ]
+                    ];
+
+                    doc.autoTable({
+                        startY: 48,
+                        body: headerData,
+                        theme: 'plain',
+                        margin: { left: margin, right: margin },
+                        styles: { fontSize: 8, cellPadding: 1.5, lineColor: [220, 220, 220], lineWidth: 0.1 },
+                        columnStyles: {
+                            0: { cellWidth: 25 }, 
+                            1: { cellWidth: (contentWidth - 50) / 2 }, 
+                            2: { cellWidth: 25 },
+                            3: { cellWidth: (contentWidth - 50) / 2 }
+                        }
+                    });
+                    
+                    let descY = doc.lastAutoTable.finalY + 4;
+                    doc.setFillColor(240, 242, 245); 
+                    doc.rect(margin, descY, contentWidth, 10, 'F');
+                    doc.setDrawColor(220);
+                    doc.rect(margin, descY, contentWidth, 10, 'S');
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(100);
+                    doc.text("ITEM DESCRIPTION", margin + 2, descY + 3.5);
+                    doc.setFontSize(11);
+                    doc.setTextColor(0);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(poDetails.itemDesc.toUpperCase() || "N/A", margin + 2, descY + 7.5);
+
+                    const tableBody = styleRows.map(row => [
+                        row['Style Number'],
+                        row['Sizes'],
+                        row['Inner Colorway 1'],
+                        row['Inner Colorway 2'],
+                        row['Master Packing'] || '-', 
+                        row['Inner Packing'] || '-', 
+                        row.pcs,
+                        row.dz, 
+                        `$${row.price.toFixed(2)}`,
+                        `$${(row.price * 12).toFixed(2)}`, 
+                        `$${row.amount}`
+                    ]);
+
+                    doc.autoTable({
+                        startY: descY + 13,
+                        head: [['Style #', 'Size', 'Color 1', 'Color 2', 'Master Pk', 'Inner Pk', 'Pcs', 'Dz', 'Price', 'Price/Dz', 'Amount']],
+                        body: tableBody,
+                        theme: 'grid',
+                        margin: { left: margin, right: margin },
+                        headStyles: { fillColor: [30, 41, 59], fontSize: 7.5, valign: 'middle', halign: 'center' }, 
+                        bodyStyles: { fontSize: 7.5, valign: 'middle', halign: 'center' }, 
+                        columnStyles: {
+                            0: { fontStyle: 'bold' },
+                            10: { halign: 'right' } 
+                        }
+                    });
+
+                    const boxY = doc.lastAutoTable.finalY + 5;
+                    const boxW = 60; 
+                    const boxH = 60; 
+                    const boxX = (pageWidth - boxW) / 2; 
+
+                    const uploadedImg = styleImages[baseStyle];
+
+                    if (uploadedImg) {
+                        doc.addImage(uploadedImg, 'JPEG', boxX, boxY, boxW, boxH);
+                        doc.setDrawColor(200);
+                        doc.setLineWidth(0.1);
+                        doc.rect(boxX, boxY, boxW, boxH);
+                    } else {
+                        doc.setDrawColor(200);
+                        doc.setLineWidth(0.2);
+                        doc.rect(boxX, boxY, boxW, boxH);
+                        doc.setFontSize(8);
+                        doc.setTextColor(150);
+                        doc.text("Paste Image / Swatch Here", pageWidth / 2, boxY + (boxH/2), { align: 'center' });
+                        doc.setTextColor(0);
+                    }
+
+                    let finalY = boxY + boxH + 5; 
+                    if (finalY + 45 > pageHeight) {
+                        doc.addPage();
+                        finalY = 20;
+                    }
+
+                    doc.setFillColor(248, 250, 252);
+                    doc.rect(margin, finalY, contentWidth, 12, 'F');
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("PAGE TOTALS", margin + 4, finalY + 8);
+                    doc.setFont("helvetica", "normal");
+                    
+                    const unitsX = margin + (contentWidth * 0.35);
+                    const dozX = margin + (contentWidth * 0.55);
+                    const totalX = rightAlignX - 2; 
+
+                    doc.text(`Units: ${tPcs}`, unitsX, finalY + 8);
+                    doc.text(`Dozens: ${tDz.toFixed(2)}`, dozX, finalY + 8);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, finalY + 8, { align: 'right' });
+
+                    doc.setDrawColor(220);
+                    const remarksBoxY = finalY + 18;
+                    doc.roundedRect(margin, remarksBoxY, contentWidth, 20, 1, 1);
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Remarks:", margin + 2, remarksBoxY + 5);
+                    doc.setFont("helvetica", "normal");
+                    const remarksText = remarks.trim() || "No remarks";
+                    doc.text(remarksText, margin + 18, remarksBoxY + 5, { maxWidth: contentWidth - 22 });
+
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(0);
+                    const legalText = globalData.legal.replace(/\n/g, " "); 
+                    const splitLegal = doc.splitTextToSize(legalText, contentWidth);
+                    doc.text(splitLegal, pageWidth / 2, remarksBoxY + 28, { align: "center" });
+                });
+
+                doc.save(`PO_${poDetails.poNumber || 'Draft'}.pdf`);
+            };
+            
+            const uniqueBaseStyles = Object.keys(baseStyleMap).sort();
+
+            return (
+                <div className="max-w-5xl mx-auto w-full md:w-auto my-4 md:my-10 bg-white rounded-lg md:rounded-xl shadow-xl overflow-hidden border border-gray-100">
+                    {/* Header */}
+                    <div className="bg-slate-900 p-6 md:p-8 text-white flex justify-between items-center flex-wrap gap-4">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
+                            <p className="text-slate-400 mt-2 text-sm md:text-base">Create official, compliant purchase orders in seconds.</p>
+                        </div>
+                        {/* TOP ACTIONS */}
+                        <div className="flex gap-2">
+                             <input type="file" accept=".json" ref={loadFileInputRef} className="hidden" onChange={loadJobFile} />
+                             <button onClick={() => loadFileInputRef.current.click()} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Load Job
+                             </button>
+                             <button onClick={saveJobFile} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3M16 3H8v4h8V3zm0 14v-4H8v4h8z"></path></svg>
+                                Save Job
+                             </button>
+                             {/* Clear Header Button */}
+                             <button onClick={clearHeader} className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition shadow-sm">
+                                Clear Header
+                             </button>
+                        </div>
+                    </div>
+                    
+                    {/* Auto-Save Notification */}
+                    <div className="bg-blue-50 px-6 py-2 text-xs text-blue-600 flex justify-between items-center border-b border-blue-100">
+                        <span><span className="font-bold">Tip:</span> Use "Save Job File" to create a template for future orders. Your current work is also auto-saved to this browser.</span>
+                    </div>
+
+                    <div className="p-4 md:p-8 space-y-6 md:space-y-8">
+                        
+                        {/* SECTION 1: Order Specifics */}
+                        <div className="bg-white rounded-lg"> 
+                            <div className="section-header mb-4">
+                                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                1. Order Specifics
+                            </div>
+                            
+                            <div className="space-y-4">
+                                {/* Row 1: Core Identifiers */}
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                    <div className="md:col-span-4">
+                                        <label className="input-label">PO Number</label>
+                                        <input type="text" name="poNumber" placeholder="e.g., 450021" value={poDetails.poNumber} onChange={handleInput} className="input-field font-semibold text-slate-800" />
+                                    </div>
+                                    <div className="md:col-span-8">
+                                        <label className="input-label">Vendor Name</label>
+                                        <input type="text" name="vendor" placeholder="e.g. ABC Factories Ltd." value={poDetails.vendor} onChange={handleInput} className="input-field" />
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Dates */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="input-label">PO Date</label>
+                                        <input type="date" name="poDate" value={poDetails.poDate} onChange={handleInput} className="input-field" />
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Ship Date (Ex-Factory)</label>
+                                        <input type="date" name="shipDate" value={poDetails.shipDate} onChange={handleInput} className="input-field" />
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Cancel Date</label>
+                                        <input type="date" name="cancelDate" value={poDetails.cancelDate} onChange={handleInput} className="input-field" />
+                                    </div>
+                                </div>
+
+                                {/* Row 3: Logistics */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="input-label">Origin <span className="text-red-500">*</span></label>
+                                        <select name="origin" value={poDetails.origin} onChange={handleInput} className={`input-field ${errors.origin ? 'error' : ''}`}>
+                                            <option value="" disabled>Select...</option>
+                                            <option value="Egypt">Egypt</option>
+                                            <option value="Bangladesh">Bangladesh</option>
+                                            <option value="China">China</option>
+                                            <option value="Pakistan">Pakistan</option>
+                                            <option value="India">India</option>
+                                            <option value="Other">Other (Specify)</option>
+                                        </select>
+                                        {poDetails.origin === 'Other' && (
+                                            <input type="text" name="originOther" placeholder="Type Country..." value={poDetails.originOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Destination</label>
+                                        <select name="destination" value={poDetails.destination} onChange={handleInput} className="input-field">
+                                            <option value="NY">New York (NY)</option>
+                                            <option value="LA">Los Angeles (LA)</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Ship Terms <span className="text-red-500">*</span></label>
+                                        <select name="shipTerms" value={poDetails.shipTerms} onChange={handleInput} className={`input-field ${errors.shipTerms ? 'error' : ''}`}>
+                                            <option value="" disabled>Select...</option>
+                                            <option value="FOB">FOB</option>
+                                            <option value="DDP">DDP</option>
+                                            <option value="LDP">LDP</option>
+                                            <option value="CIF">CIF</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        {poDetails.shipTerms === 'Other' && (
+                                            <input type="text" name="shipTermsOther" placeholder="Specify Terms" value={poDetails.shipTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Pay Terms <span className="text-red-500">*</span></label>
+                                        <select name="payTerms" value={poDetails.payTerms} onChange={handleInput} className={`input-field ${errors.payTerms ? 'error' : ''}`}>
+                                            <option value="" disabled>Select...</option>
+                                            <option value="Net 30">Net 30</option>
+                                            <option value="Net 60">Net 60</option>
+                                            <option value="L/C">L/C</option>
+                                            <option value="LDP">LDP</option>
+                                            <option value="TT">TT</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        {poDetails.payTerms === 'Other' && (
+                                            <input type="text" name="payTermsOther" placeholder="Specify Terms" value={poDetails.payTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Row 4: Classification */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="input-label">Department <span className="text-red-500">*</span></label>
+                                        <select name="department" value={poDetails.department} onChange={handleInput} className={`input-field ${errors.department ? 'error' : ''}`}>
+                                            <option value="" disabled>Select...</option>
+                                            {DEPARTMENT_OPTIONS.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Gender</label>
+                                        <select name="gender" value={poDetails.gender} onChange={handleInput} className="input-field">
+                                            <option value="" disabled>Select...</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Unisex">Unisex</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Season</label>
+                                        <select name="season" value={poDetails.season} onChange={handleInput} className="input-field">
+                                            <option value="Spring">Spring</option>
+                                            <option value="Fall">Fall</option>
+                                            <option value="Summer">Summer</option>
+                                            <option value="Holiday">Holiday</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Year</label>
+                                        <input type="number" name="year" value={poDetails.year} onChange={handleInput} className="input-field" />
+                                    </div>
+                                </div>
+
+                                {/* Row 5: Product Details */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="input-label">Label / Brand</label>
+                                        <input type="text" name="labelBrand" placeholder="e.g. Allura" value={poDetails.labelBrand} onChange={handleInput} className="input-field" />
+                                    </div>
+                                     <div>
+                                         <label className="input-label">Royalty Code</label>
+                                        <select 
+                                            name="royaltyCode" 
+                                            value={poDetails.royaltyCode} 
+                                            onChange={handleInput} 
+                                            className="input-field"
+                                        >
+                                            <option value="">(None)</option>
+                                            {ROYALTY_OPTIONS.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Class</label>
+                                        <input type="text" name="class" placeholder="e.g. Knits" value={poDetails.class} onChange={handleInput} className="input-field" />
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Sub Class</label>
+                                        <input type="text" name="subClass" placeholder="e.g. Tees" value={poDetails.subClass} onChange={handleInput} className="input-field" />
+                                    </div>
+                                </div>
+
+                                {/* Row 6: Fabrics & Item */}
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                    <div className="md:col-span-4">
+                                        <label className="input-label">Item Description</label>
+                                        <input type="text" name="itemDesc" placeholder="e.g. Crew Neck Tee" value={poDetails.itemDesc} onChange={handleInput} className="input-field" />
+                                    </div>
+                                    <div className="md:col-span-4">
+                                        <label className="input-label">Top Fabric</label>
+                                        <input type="text" name="topFabric" placeholder="e.g. 100% Cotton" value={poDetails.topFabric} onChange={handleInput} className="input-field" />
+                                    </div>
+                                    <div className="md:col-span-4">
+                                        <label className="input-label">Bottom Fabric</label>
+                                        <input type="text" name="bottomFabric" placeholder="e.g. N/A" value={poDetails.bottomFabric} onChange={handleInput} className="input-field" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SECTION 2: Upload */}
+                        <div>
+                            <div className="section-header flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <span>2. Style Data Import</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={clearImport} className="text-sm text-red-600 hover:text-red-800 font-medium underline flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        Clear Import
+                                    </button>
+                                    <button onClick={downloadTemplate} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline">
+                                        Download CSV Template
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div 
+                                className={`border-2 border-dashed rounded-lg p-8 text-center transition relative group ${isDragActive ? 'drag-active' : 'border-slate-300 hover:bg-slate-50'}`}
+                                onDragEnter={handleDragEnter}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                <input 
+                                    type="file" 
+                                    accept=".csv" 
+                                    onChange={handleFileUpload} 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                />
+                                <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition ${isDragActive ? 'bg-indigo-500 text-white scale-110' : 'bg-indigo-100 text-indigo-600'}`}>
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <span className="text-lg font-medium text-slate-700">
+                                        {fileName ? `File Loaded: ${fileName}` : "Drop CSV file here or click to upload"}
+                                    </span>
+                                    <span className="text-sm text-slate-500">Required Columns: Style Number, Sizes, Pcs, Price Per Pc...</span>
+                                </div>
+                            </div>
+
+                            {/* CSV Preview Table */}
+                            {csvData.length > 0 && (
+                                <div className="mt-6">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <h3 className="text-sm font-bold text-slate-700">Data Preview (First 10 Rows)</h3>
+                                        <span className="text-xs text-slate-500">Total Rows: {csvData.length}</span>
+                                    </div>
+                                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                                        <table className="min-w-full text-sm text-left text-slate-600">
+                                            <thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-xs">
+                                                <tr>
+                                                    <th className="px-4 py-2">Style</th>
+                                                    <th className="px-4 py-2">Base (Calc)</th>
+                                                    <th className="px-4 py-2">Size</th>
+                                                    <th className="px-4 py-2">Color 1</th>
+                                                    <th className="px-4 py-2">Pcs</th>
+                                                    <th className="px-4 py-2">Price</th>
+                                                    <th className="px-4 py-2 text-right">Amt</th>
+                                                    <th className="px-4 py-2 text-center">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200">
+                                                {csvData.slice(0, 10).map((row, i) => {
+                                                    const masterPack = extractFirstNumber(row['Master Packing']);
+                                                    const isDivisible = masterPack > 0 ? (row.pcs % masterPack === 0) : true;
+                                                    
+                                                    return (
+                                                        <tr key={i} className={`hover:bg-slate-50 ${!isDivisible ? 'bg-red-50' : ''}`}>
+                                                            <td className="px-4 py-2 font-medium">{row['Style Number']}</td>
+                                                            <td className="px-4 py-2 text-slate-400">{row.baseStyle}</td>
+                                                            <td className="px-4 py-2">{row['Sizes']}</td>
+                                                            <td className="px-4 py-2">{row['Inner Colorway 1']}</td>
+                                                            <td className="px-4 py-2">{row.pcs}</td>
+                                                            <td className="px-4 py-2">${row.price.toFixed(2)}</td>
+                                                            <td className="px-4 py-2 text-right font-mono">${row.amount}</td>
+                                                            <td className="px-4 py-2 text-center">
+                                                                {!isDivisible && (
+                                                                    <span className="text-xs text-red-600 font-bold flex items-center justify-center gap-1" title={`${row.pcs} not divisible by ${masterPack}`}>
+                                                                        ⚠️ Error
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2 italic">Verify the calculations above before generating PDF. Rows in red have packing errors.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* SECTION 3: Style Images (UPDATED TO BASE STYLES) */}
+                        {uniqueBaseStyles.length > 0 && (
+                            <div>
+                                <div className="section-header">
+                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    3. Style Images (Grouped by Base Style)
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {uniqueBaseStyles.map(base => {
+                                        const stylesInGroup = Array.from(baseStyleMap[base] || []);
+                                        return (
+                                            <div key={base} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                                                <div className="font-bold text-slate-800 mb-1 text-lg">Base: {base}</div>
+                                                <div className="text-xs text-slate-500 mb-3 italic">
+                                                    Includes: {stylesInGroup.slice(0, 3).join(', ')}{stylesInGroup.length > 3 ? '...' : ''}
+                                                </div>
+                                                
+                                                {/* Input Group with Paste Button */}
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        onChange={(e) => handleImageUpload(base, e.target.files[0])}
+                                                        className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                                    />
+                                                    <button
+                                                        onClick={() => handlePaste(base)}
+                                                        className="bg-white border border-slate-300 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 p-2 rounded-full shadow-sm transition"
+                                                        title="Paste image from clipboard"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                                    </button>
+                                                </div>
+
+                                                {styleImages[base] ? (
+                                                    <div className="mt-3 h-32 w-full bg-white border rounded flex items-center justify-center overflow-hidden relative">
+                                                        <img src={styleImages[base]} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                                        <button 
+                                                            onClick={() => setStyleImages(prev => { const n = {...prev}; delete n[base]; return n; })}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                                        >✕</button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-3 h-32 w-full bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-xs">
+                                                        No Image Selected
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SECTION 4: Finish */}
+                        <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="input-label mb-0">Remarks / Special Instructions</label>
+                                    <span className="text-xs text-slate-500 italic">This text will be listed at the bottom of every page.</span>
+                                </div>
+                                <textarea 
+                                    value={remarks} 
+                                    onChange={(e) => setRemarks(e.target.value)} 
+                                    className="input-field h-24" 
+                                    placeholder="Enter any specific notes for the factory (e.g. 'Pack individually')..."
+                                ></textarea>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <button 
+                                    onClick={generatePDF}
+                                    disabled={csvData.length === 0}
+                                    className="flex-1 w-full btn-primary text-lg shadow-lg flex items-center justify-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
+                                </button>
+                                
+                                <button 
+                                    onClick={downloadStyleImportData}
+                                    disabled={csvData.length === 0}
+                                    className="flex-1 w-full btn-secondary text-lg shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Download Style Import Data
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
