@@ -118,7 +118,7 @@
             "14 - DELIAS SLEEP",
             "15 - DELIAS UNDERWEAR",
             "16 - MENS UNDERWEAR/SL",
-            "17 - PET" // Added as requested
+            "17 - PET"
         ];
 
         const ROYALTY_OPTIONS = [
@@ -164,7 +164,6 @@
         };
 
         // --- HELPER: EXTRACT NUMBER FROM STRING ---
-        // "72 (12)" -> 72
         const extractFirstNumber = (str) => {
             if (!str) return 0;
             const match = str.toString().match(/\d+/);
@@ -206,7 +205,7 @@
             });
 
             const [csvData, setCsvData] = useState([]);
-            const [styleImages, setStyleImages] = useState({});
+            const [styleImages, setStyleImages] = useState({}); // Stores { data: base64, width: num, height: num }
             const [baseStyleMap, setBaseStyleMap] = useState({});
             
             const [remarks, setRemarks] = useState("");
@@ -332,10 +331,15 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    setStyleImages(prev => ({
-                        ...prev,
-                        [baseStyle]: reader.result 
-                    }));
+                    // Create image to get dimensions
+                    const img = new Image();
+                    img.onload = () => {
+                        setStyleImages(prev => ({
+                            ...prev,
+                            [baseStyle]: { data: reader.result, width: img.width, height: img.height }
+                        }));
+                    };
+                    img.src = reader.result;
                 };
                 reader.readAsDataURL(file);
             };
@@ -349,10 +353,15 @@
                             const blob = await item.getType(imageType);
                             const reader = new FileReader();
                             reader.onloadend = () => {
-                                setStyleImages(prev => ({
-                                    ...prev,
-                                    [baseStyle]: reader.result
-                                }));
+                                // Create image to get dimensions
+                                const img = new Image();
+                                img.onload = () => {
+                                    setStyleImages(prev => ({
+                                        ...prev,
+                                        [baseStyle]: { data: reader.result, width: img.width, height: img.height }
+                                    }));
+                                };
+                                img.src = reader.result;
                             };
                             reader.readAsDataURL(blob);
                             return; 
@@ -429,18 +438,13 @@
 
             const calculateInners = (master, inner) => {
                 if (!master) return "";
-                
-                // 1. Check for paren format like "72 (12)" -> return 12
                 const parenMatch = master.toString().match(/\((\d+)\)/);
                 if (parenMatch) {
                     return parseInt(parenMatch[1], 10);
                 }
-
-                // 2. Fallback to calculation
                 const m = extractFirstNumber(master);
                 const i = extractFirstNumber(inner);
                 if (m > 0 && i > 0) return Math.floor(m / i);
-                
                 return "";
             };
 
@@ -448,14 +452,30 @@
                 if (csvData.length === 0) return;
                 const finalOrigin = poDetails.origin === "Other" ? poDetails.originOther : poDetails.origin;
                 const exportData = csvData.map(row => {
+                    const packQty = extractFirstNumber(row['Master Packing']);
+                    const fob = parseFloat(row['Price Per Pc'] || 0);
+                    let msrp = "";
+                    if (fob > 0) {
+                        const rawMsrp = fob * 8;
+                        msrp = Math.ceil(rawMsrp / 5) * 5;
+                    }
+                    let contentStr = "";
+                    if (poDetails.topFabric) {
+                        contentStr += `TOP ${poDetails.topFabric}`;
+                    }
+                    if (poDetails.bottomFabric) {
+                        if (contentStr) contentStr += ", ";
+                        contentStr += `BOTTOM ${poDetails.bottomFabric}`;
+                    }
+
                     return {
                         "Style Number": row['Style Number'],
                         "Pack-ID": "",
                         "Style Description": poDetails.itemDesc,
                         "Status": "",
-                        "Pack": row['Master Packing'],
+                        "Pack": packQty || "", 
                         "No of Inners": calculateInners(row['Master Packing'], row['Inner Packing']),
-                        "Division": "",
+                        "Division": "AL",
                         "Dept": poDetails.department,
                         "Season": poDetails.season,
                         "Year": poDetails.year,
@@ -463,24 +483,25 @@
                         "Cost Code": "",
                         "Color": row['Inner Colorway 1'],
                         "Size": row['Sizes'],
-                        "Quantity": row['Pcs'],
+                        "Quantity": packQty || "", 
                         "Reference": "",
                         "Country": finalOrigin,
                         "Group": "",
                         "SubGroup": poDetails.subClass,
                         "Brand": poDetails.labelBrand,
-                        "Maker Code": poDetails.vendor,
+                        "Maker Code": "",
                         "FOB Price": row['Price Per Pc'],
                         "Selling Price": "",
-                        "MSRP": "",
+                        "MSRP": msrp,
                         "Base Style": row.baseStyle,
+                        "Gender": poDetails.gender,
                         "Select Code": "",
                         "HTS Code": "",
                         "Royalty": poDetails.royaltyCode,
-                        "Content": poDetails.topFabric,
+                        "Content": contentStr,
                         "Construction": "",
                         "Finish": "",
-                        "Materials": "",
+                        "Materials": contentStr,
                         "Comments": remarks
                     };
                 });
@@ -490,6 +511,29 @@
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `Style_Import_Data_${poDetails.poNumber}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            // NEW: Download PO Import Data (Simple Format)
+            const downloadPOImportData = () => {
+                if (csvData.length === 0) return;
+                
+                const exportData = csvData.map(row => {
+                    return {
+                        "Style No.": row['Style Number'],
+                        "Pack ID": "", // Left blank as requested
+                        "Price": row['Price Per Pc'],
+                        "Quantity": row['Pcs'] // Using Order Quantity
+                    };
+                });
+
+                const csv = Papa.unparse(exportData);
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PO_Import_Data_${poDetails.poNumber}.csv`;
                 a.click();
                 window.URL.revokeObjectURL(url);
             };
@@ -673,14 +717,37 @@
                     const boxH = 60; 
                     const boxX = (pageWidth - boxW) / 2; 
 
-                    const uploadedImg = styleImages[baseStyle];
+                    const imgObj = styleImages[baseStyle];
 
-                    if (uploadedImg) {
-                        doc.addImage(uploadedImg, 'JPEG', boxX, boxY, boxW, boxH);
+                    if (imgObj) {
+                        const { data, width, height } = imgObj;
+                        // Calculate Aspect Ratio Contain Logic
+                        const imgRatio = width / height;
+                        const boxRatio = boxW / boxH;
+                        
+                        let drawW = boxW;
+                        let drawH = boxH;
+                        
+                        if (imgRatio > boxRatio) {
+                            // Image is wider than box (relative to ratio), constrain by width
+                            drawH = boxW / imgRatio;
+                        } else {
+                            // Image is taller than box, constrain by height
+                            drawW = boxH * imgRatio;
+                        }
+                        
+                        // Center the image in the box
+                        const drawX = boxX + (boxW - drawW) / 2;
+                        const drawY = boxY + (boxH - drawH) / 2;
+
+                        doc.addImage(data, 'JPEG', drawX, drawY, drawW, drawH);
+                        
+                        // Optional: Draw the border of the placeholder box for reference
                         doc.setDrawColor(200);
                         doc.setLineWidth(0.1);
                         doc.rect(boxX, boxY, boxW, boxH);
                     } else {
+                        // Placeholder
                         doc.setDrawColor(200);
                         doc.setLineWidth(0.2);
                         doc.rect(boxX, boxY, boxW, boxH);
@@ -738,13 +805,13 @@
             return (
                 <div className="max-w-5xl mx-auto w-full md:w-auto my-4 md:my-10 bg-white rounded-lg md:rounded-xl shadow-xl overflow-hidden border border-gray-100">
                     {/* Header */}
-                    <div className="bg-slate-900 p-6 md:p-8 text-white flex justify-between items-center flex-wrap gap-4">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
-                            <p className="text-slate-400 mt-2 text-sm md:text-base">Create official, compliant purchase orders in seconds.</p>
+                    <div className="bg-slate-900 p-4 md:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="mb-2 md:mb-0">
+                            <h1 className="text-xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
+                            <p className="text-slate-400 mt-1 md:mt-2 text-xs md:text-base">Create official, compliant purchase orders in seconds.</p>
                         </div>
                         {/* TOP ACTIONS */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
                              <input type="file" accept=".json" ref={loadFileInputRef} className="hidden" onChange={loadJobFile} />
                              <button onClick={() => loadFileInputRef.current.click()} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
@@ -945,18 +1012,18 @@
 
                         {/* SECTION 2: Upload */}
                         <div>
-                            <div className="section-header flex justify-between items-center">
+                            <div className="section-header flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 mb-4">
                                 <div className="flex items-center gap-2">
                                     <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                     <span>2. Style Data Import</span>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full md:w-auto mt-2 md:mt-0">
                                     <button onClick={clearImport} className="text-sm text-red-600 hover:text-red-800 font-medium underline flex items-center gap-1">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         Clear Import
                                     </button>
                                     <button onClick={downloadTemplate} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline">
-                                        Download CSV Template
+                                        Download Template
                                     </button>
                                 </div>
                             </div>
@@ -1074,7 +1141,7 @@
 
                                                 {styleImages[base] ? (
                                                     <div className="mt-3 h-32 w-full bg-white border rounded flex items-center justify-center overflow-hidden relative">
-                                                        <img src={styleImages[base]} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                                        <img src={styleImages[base].data} alt="Preview" className="max-h-full max-w-full object-contain" />
                                                         <button 
                                                             onClick={() => setStyleImages(prev => { const n = {...prev}; delete n[base]; return n; })}
                                                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
@@ -1107,23 +1174,33 @@
                                 ></textarea>
                             </div>
 
-                            <div className="flex flex-col md:flex-row gap-4">
+                            {/* Updated Grid Layout for Buttons */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <button 
                                     onClick={generatePDF}
                                     disabled={csvData.length === 0}
-                                    className="flex-1 w-full btn-primary text-lg shadow-lg flex items-center justify-center gap-2"
+                                    className="col-span-1 md:col-span-2 btn-primary text-lg shadow-lg flex items-center justify-center gap-2 py-4"
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                     {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
                                 </button>
                                 
                                 <button 
                                     onClick={downloadStyleImportData}
                                     disabled={csvData.length === 0}
-                                    className="flex-1 w-full btn-secondary text-lg shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"
                                 >
                                     <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     Download Style Import Data
+                                </button>
+
+                                <button 
+                                    onClick={downloadPOImportData}
+                                    disabled={csvData.length === 0}
+                                    className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"
+                                >
+                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Download PO Import Data
                                 </button>
                             </div>
                         </div>
