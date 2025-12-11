@@ -800,25 +800,31 @@
                     doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, totalsY + 6.5, { align: 'right' });
 
                     // -- 2. MAIN CONTENT BLOCK (Image + Instructions) --
-                    // We calculate this to fill the page, leaving space for Remarks + Footer
-                    // Max height remaining calculation:
-                    // Height = PageHeight - (CurrentY + FooterMargin + RemarksHeight + LegalText)
-                    // Footer ~10mm, Remarks ~30mm, Legal ~15mm. Buffer ~10mm.
-                    // Total bottom reserve approx 65mm.
-                    
-                    let layoutY = totalsY + 14;
-                    const availableH = pageHeight - layoutY - 60; // Reserve for remarks & footer
-                    const sectionH = Math.max(availableH, 85); // Minimum 85mm, maximize if space allows
-                    
-                    // Page break check (If available height is too small, start new page)
-                    if (availableH < 85) {
+                    // Layout gap
+                    const gapAfterTotals = 8;
+                    let layoutY = totalsY + gapAfterTotals;
+
+                    // Bottom constraints
+                    const footerHeight = 15; // Space for legal text + margin
+                    const remarksHeight = 30; // Bigger box for bold red text
+                    const gapBeforeRemarks = 3; 
+
+                    // Calculate available height for the Image/Instructions block
+                    let availableH = pageHeight - layoutY - margin - footerHeight - remarksHeight - gapBeforeRemarks;
+
+                    // Minimum reasonable height. If less, we push to next page.
+                    const minSectionH = 60; 
+
+                    if (availableH < minSectionH) {
                         doc.addPage();
                         layoutY = margin;
-                        // Recalculate sectionH for new page
-                        // On new page: 279 - 15 - 60 = ~200mm available
+                        availableH = pageHeight - layoutY - margin - footerHeight - remarksHeight - gapBeforeRemarks;
                     }
+
+                    // Use all available height
+                    const sectionH = availableH;
                     
-                    // Width Split: Image gets ~45% width, Instructions ~55%
+                    // Width Split: Image gets ~42% width, Instructions ~58%
                     const imgBoxW = contentWidth * 0.42; 
                     const imgBoxH = sectionH;
                     const gap = 4;
@@ -863,29 +869,28 @@
 
                     // B. INSTRUCTIONS (RIGHT)
                     // Split instructionsW into 2 cols: Testing (Narrower) | Packing (Wider)
-                    // Testing text wraps heavily, needs width. Packing is a grid.
                     const instrCol1W = instructionsW * 0.5; 
                     const instrCol2X = instructionsX + instrCol1W;
                     const instrCol2W = instructionsW * 0.5;
 
-                    // Draw Outer Boxes
-                    doc.setDrawColor(200);
-                    doc.setLineWidth(0.1);
-                    doc.rect(instructionsX, layoutY, instrCol1W, sectionH); // Testing Box
-                    doc.rect(instrCol2X, layoutY, instrCol2W, sectionH);   // Packing Box
-                    
-                    // Headers
+                    // -- DRAW INSTRUCTIONS BACKGROUNDS & HEADERS --
+                    // 1. Headers Fill
                     doc.setFillColor(240, 242, 245); 
                     doc.rect(instructionsX, layoutY, instrCol1W, 7, 'F');
                     doc.rect(instrCol2X, layoutY, instrCol2W, 7, 'F');
-                    doc.line(instructionsX, layoutY + 7, instructionsX + instrCol1W, layoutY + 7);
-                    doc.line(instrCol2X, layoutY + 7, instrCol2X + instrCol2W, layoutY + 7);
-
+                    
+                    // 2. Header Text
                     doc.setFontSize(7);
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(50);
                     doc.text("TESTING & INSPECTION", instructionsX + 2, layoutY + 4.5);
                     doc.text("PACKING DETAIL", instrCol2X + 2, layoutY + 4.5);
+
+                    // 3. Separator Line under Header
+                    doc.setDrawColor(200);
+                    doc.setLineWidth(0.1);
+                    doc.line(instructionsX, layoutY + 7, instructionsX + instrCol1W, layoutY + 7);
+                    doc.line(instrCol2X, layoutY + 7, instrCol2X + instrCol2W, layoutY + 7);
 
                     // --- TESTING CONTENT (Left Col) ---
                     doc.setFont("helvetica", "normal");
@@ -921,8 +926,11 @@
                     drawCheckItem("FULL INSPECTION REPORT", compliance.fullInspection);
 
                     // --- PACKING CONTENT (Right Col - Grid Layout) ---
-                    // Draw Grid Lines
-                    const rowH = (sectionH - 7) / 9; // 9 items total
+                    // Dynamically calculate row height to fill the box
+                    // Total Height = sectionH. Header = 7. 
+                    // Content Height = sectionH - 7.
+                    // Items = 9. 
+                    const rowH = (sectionH - 7) / 9; 
                     let gridY = layoutY + 7;
                     
                     const packLabels = [
@@ -942,7 +950,7 @@
                         // Divider Line (except first which is header border)
                         if (idx > 0) {
                             doc.setDrawColor(230); // Very light gray line
-                            doc.line(instrCol2X + 2, cellY, instrCol2X + instrCol2W - 2, cellY);
+                            doc.line(instrCol2X, cellY, instrCol2X + instrCol2W, cellY);
                         }
                         
                         // Text Centering vertically
@@ -970,13 +978,18 @@
                         }
                     });
 
+                    // 4. Draw Outer Borders LAST (to be neat)
+                    doc.setDrawColor(200);
+                    doc.setLineWidth(0.1);
+                    doc.rect(instructionsX, layoutY, instrCol1W, sectionH); // Testing Box
+                    doc.rect(instrCol2X, layoutY, instrCol2W, sectionH);   // Packing Box
+
                     // -- REMARKS --
-                    const remarksBoxY = layoutY + sectionH + 3;
-                    const remarksH = 25; // Bigger box
+                    const remarksBoxY = layoutY + sectionH + gapBeforeRemarks;
                     
                     doc.setDrawColor(220);
                     doc.setLineWidth(0.3); // Thicker border
-                    doc.roundedRect(margin, remarksBoxY, contentWidth, remarksH, 1, 1);
+                    doc.roundedRect(margin, remarksBoxY, contentWidth, remarksHeight, 1, 1);
                     
                     doc.setFontSize(9);
                     doc.setFont("helvetica", "bold");
@@ -984,6 +997,7 @@
                     doc.text("Remarks / Special Instructions:", margin + 3, remarksBoxY + 5);
                     
                     doc.setFontSize(10); // Larger Font
+                    doc.setFont("helvetica", "bold"); // Bold
                     doc.setTextColor(220, 38, 38); // Red Color (Tailwind Red-600 approx)
                     
                     const remarksText = remarks.trim() || "No remarks";
