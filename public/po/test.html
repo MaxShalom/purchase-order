@@ -775,14 +775,31 @@
                         }
                     });
 
-                    // -- 1. Page Totals Strip (Immediately under table) --
+                    // -- 1. Page Totals Strip --
                     let totalsY = doc.lastAutoTable.finalY + 2; 
                     
-                    if (totalsY + 10 > pageHeight) {
+                    // --- Bottom Layout Calculation ---
+                    const footerHeight = 12; // Space for legal text
+                    const remarksHeight = 25; // Fixed height for remarks box
+                    // Remarks anchored to bottom of page (above footer)
+                    let remarksBoxY = pageHeight - margin - footerHeight - remarksHeight;
+                    
+                    // Fixed Height for Image/Instructions Block
+                    const sectionH = 65; 
+                    const gapAfterTotals = 14; // Increased Gap
+                    
+                    // Check if there is enough space on this page
+                    // We need totalsY + 10 (totals height) + gapAfterTotals + sectionH <= remarksBoxY
+                    // If not, add page.
+                    
+                    if (totalsY + 10 + gapAfterTotals + sectionH > remarksBoxY) {
                         doc.addPage();
                         totalsY = margin;
+                        // On new page, recalculate anchored bottom
+                        remarksBoxY = pageHeight - margin - footerHeight - remarksHeight;
                     }
 
+                    // Draw Totals
                     doc.setFillColor(248, 250, 252);
                     doc.rect(margin, totalsY, contentWidth, 10, 'F');
                     doc.setFontSize(9);
@@ -800,30 +817,7 @@
                     doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, totalsY + 6.5, { align: 'right' });
 
                     // -- 2. MAIN CONTENT BLOCK (Image + Instructions) --
-                    // Layout gap
-                    const gapAfterTotals = 12; // INCREASED GAP
-                    let layoutY = totalsY + gapAfterTotals;
-
-                    // Bottom constraints
-                    const footerHeight = 15; // Space for legal text + margin
-                    const remarksHeight = 22; // Height for bold red text box
-                    const gapBeforeRemarks = 8; 
-
-                    // Calculate available height for the Image/Instructions block
-                    let availableH = pageHeight - layoutY - margin - footerHeight - remarksHeight - gapBeforeRemarks;
-
-                    // Minimum reasonable height. If less, we push to next page.
-                    const minSectionH = 60; 
-
-                    if (availableH < minSectionH) {
-                        doc.addPage();
-                        layoutY = margin;
-                        availableH = pageHeight - layoutY - margin - footerHeight - remarksHeight - gapBeforeRemarks;
-                    }
-
-                    // FIXED: Use a reasonable FIXED height (65mm) for a compact look, 
-                    // instead of expanding to fill everything which looked empty.
-                    const sectionH = 65; 
+                    const layoutY = totalsY + 10 + gapAfterTotals;
                     
                     // Width Split: Image gets ~42% width, Instructions ~58%
                     const imgBoxW = contentWidth * 0.42; 
@@ -986,8 +980,7 @@
                     doc.rect(instrCol2X, layoutY, instrCol2W, sectionH);   // Packing Box
 
                     // -- REMARKS --
-                    const remarksBoxY = layoutY + sectionH + gapBeforeRemarks;
-                    
+                    // Anchored at remarksBoxY calculated earlier
                     doc.setDrawColor(220);
                     doc.setLineWidth(0.3); // Thicker border
                     doc.roundedRect(margin, remarksBoxY, contentWidth, remarksHeight, 1, 1);
