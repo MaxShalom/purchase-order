@@ -76,6 +76,31 @@
             border-color: #6366f1; /* indigo-500 */
             transform: scale(1.01);
         }
+        
+        /* Custom Styles for Switches and Checkboxes */
+        .checkbox-wrapper input:checked + div {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .checkbox-wrapper input:checked + div svg {
+            display: block;
+        }
+        
+        .toggle-switch-track {
+            background-color: #e2e8f0;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .toggle-switch-track.active {
+            background-color: #4f46e5;
+        }
+        .toggle-switch-thumb {
+            background-color: white;
+            transition: transform 0.2s ease-in-out;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .toggle-switch-track.active .toggle-switch-thumb {
+            transform: translateX(1.25rem); /* Translate based on width of track minus width of thumb */
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -101,6 +126,7 @@
             return d.toISOString().split('T')[0];
         };
 
+        // --- OPTIONS CONSTANTS ---
         const DEPARTMENT_OPTIONS = [
             "01 - BOYS",
             "02 - GIRLS",
@@ -119,6 +145,86 @@
             "15 - DELIAS UNDERWEAR",
             "16 - MENS UNDERWEAR/SL",
             "17 - PET"
+        ];
+
+        const SUB_GROUP_OPTIONS = [
+            "4-6X GIRLS - 46XG",
+            "4-7 BOYS - 47B",
+            "7-16 GIRLS - 716G",
+            "8-16 BOYS - 816B",
+            "BASICS - BASICS",
+            "INFANTS BOYS - INFB",
+            "INFANTS GIRLS - INFG",
+            "LADIES - LADIES",
+            "MENS - MENS",
+            "NB BOYS - NBB",
+            "NB GIRLS - NBG",
+            "TODDLER BOYS - TODB",
+            "TODDLER GIRLS - TODG",
+            "PET - PET"
+        ];
+
+        const CLASS_OPTIONS = [
+            "401 - S/S TOPS",
+            "402 - L/S TOPS",
+            "403 - SWEATERS",
+            "404 - ACTIVE/FLEECE TOPS",
+            "411 - TWILL PANTS",
+            "412 - DENIM PANTS",
+            "413 - ACTIVE/FLEECE PANTS",
+            "414 - LEGGINGS",
+            "421 - TWILL/WOVEN SHORTS",
+            "422 - DENIM SHORTS",
+            "423 - ACTIVE/KNIT SHORTS",
+            "431 - ACTIVE/PROMO SHORT SETS",
+            "432 - FASHION SHORT SETS",
+            "451 - S/S PANT SET",
+            "452 - L/S PANT SET",
+            "465 - FLEECE/HEAVY SETS",
+            "470 - DRESSES",
+            "471 - ROMPERS/SHORTALLS",
+            "491 - OUTERWEAR",
+            "492 - PRAMS",
+            "493 - SKI",
+            "501 - SWIM",
+            "53 - LAYETTE",
+            "531 - ONESIES",
+            "532 - GIFT SETS",
+            "533 - BABY PANT SETS",
+            "534 - BABY SHORT SETS",
+            "535 - SLEEP AND PLAY",
+            "536 - DRESSES/ROMPERS",
+            "537 - BABY BASICS",
+            "538 - BLANKETS",
+            "539 - BABY ROBES",
+            "540 - BATH ACCESSORIES",
+            "541 - BIBS/CAPS/MITTENS",
+            "542 - SOCKS",
+            "543 - PLUSH DOLLS",
+            "591 - UNIFORM TOPS",
+            "592 - UNIFORM BOTTOMS",
+            "593 - UNIFORM JUMPERS",
+            "594 - UNIFORM SCOOTERS/SKIRTS",
+            "60 - COTTON PJS",
+            "61 - HEAVYWEIGHT PJS",
+            "62 - THERMALS",
+            "63 - BLANKET SLEEPERS",
+            "64 - GOWNS",
+            "65 - SEAMLESS UNDERWEAR/BRAS",
+            "66 - UNDERWEAR BOY/GIRL/MENS",
+            "67 - BRAS",
+            "68 - POLY KNIT PJS",
+            "69 - ROBES",
+            "90 - LADIES SLEEP",
+            "901 - LADIES PJ SETS",
+            "902 - LADIES GOWNS",
+            "903 - LADIES PJ BOTTOMS",
+            "904 - LADIES ROBES",
+            "910 - LADIES UNDERWEAR",
+            "915 - LADIES BRAS",
+            "950 - PET TEES",
+            "951 - PET SWEATERS",
+            "99 - MISC"
         ];
 
         const ROYALTY_OPTIONS = [
@@ -141,41 +247,176 @@
             "21 - SOUTHPOLE"
         ];
 
+        const ORIGIN_OPTIONS = ["Egypt", "Bangladesh", "China", "Pakistan", "India", "Other"];
+        const DESTINATION_OPTIONS = ["NY", "LA", "Other"];
+        const SHIP_TERMS_OPTIONS = ["FOB", "DDP", "LDP", "CIF", "Other"];
+        const PAY_TERMS_OPTIONS = ["Net 30", "Net 60", "L/C", "LDP", "TT", "Other"];
+        const GENDER_OPTIONS = ["Male", "Female", "Unisex"];
+        const SEASON_OPTIONS = ["Spring", "Fall", "Summer", "Holiday"];
+
         // --- HELPER: DERIVE BASE STYLE ---
         const getBaseStyle = (styleNum) => {
             if (!styleNum) return "UNKNOWN";
             const s = styleNum.trim();
-            
             if (/^\d/.test(s)) {
                 if (s.length >= 5) {
                     return s.substring(1, 5);
                 }
                 return s; 
             }
-            
             if (/^[A-Z]/i.test(s)) {
                 if (s.length >= 6) {
                     return s.charAt(0) + s.substring(2, 6);
                 }
                 return s; 
             }
-
             return s;
         };
 
-        // --- HELPER: EXTRACT NUMBER FROM STRING ---
         const extractFirstNumber = (str) => {
             if (!str) return 0;
             const match = str.toString().match(/\d+/);
             return match ? parseInt(match[0], 10) : 0;
         };
 
+        // --- COMPONENTS ---
+
+        // Searchable Select Component
+        const SearchableSelect = ({ label, name, value, options, onChange, placeholder, error, required = false }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [search, setSearch] = useState("");
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                setSearch(value || "");
+            }, [value]);
+
+            useEffect(() => {
+                function handleClickOutside(event) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                        // Strict validation: Revert if current search is not in options
+                        // Use a timeout to allow click events on options to fire first
+                        setTimeout(() => {
+                            if (search !== "" && !options.some(opt => opt.toLowerCase() === search.toLowerCase())) {
+                                setSearch(value || ""); 
+                            }
+                        }, 100);
+                    }
+                }
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => document.removeEventListener("mousedown", handleClickOutside);
+            }, [wrapperRef, options, search, value]);
+
+            const filteredOptions = options.filter(opt =>
+                opt.toLowerCase().includes(search.toLowerCase())
+            );
+
+            const handleSelect = (opt) => {
+                onChange({ target: { name, value: opt } });
+                setSearch(opt);
+                setIsOpen(false);
+            };
+
+            const handleInputChange = (e) => {
+                setSearch(e.target.value);
+                setIsOpen(true);
+            };
+
+            return (
+                <div className="relative mb-0 w-full" ref={wrapperRef}>
+                    {label && (
+                        <label className="input-label">
+                            {label} {required && <span className="text-red-500">*</span>}
+                        </label>
+                    )}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name={name}
+                            className={`input-field pr-8 ${error ? 'error' : ''}`}
+                            placeholder={placeholder || "Select..."}
+                            value={search}
+                            onChange={handleInputChange}
+                            onFocus={() => setIsOpen(true)}
+                            autoComplete="off"
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    {isOpen && (
+                        <ul className="absolute z-50 w-full bg-white border border-gray-200 mt-1 max-h-60 overflow-auto rounded-md shadow-lg text-sm">
+                            {filteredOptions.length > 0 ? (
+                                filteredOptions.map((opt) => (
+                                    <li
+                                        key={opt}
+                                        className="px-3 py-2 hover:bg-indigo-50 cursor-pointer text-slate-700"
+                                        onClick={() => handleSelect(opt)}
+                                    >
+                                        {opt}
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="px-3 py-2 text-gray-400 italic">No options found</li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+            );
+        };
+
+        const PackingToggle = ({ label, value, onChange }) => (
+            <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 group">
+                <span className="text-sm font-medium text-slate-700 group-hover:text-indigo-600 transition-colors">{label}</span>
+                <label className="flex items-center cursor-pointer relative">
+                    <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="sr-only" />
+                    <div className={`w-11 h-6 rounded-full shadow-inner transition-colors ${value ? 'bg-indigo-600' : 'bg-slate-200'}`}></div>
+                    <div className={`absolute w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-6' : 'translate-x-1'} top-1`}></div>
+                </label>
+            </div>
+        );
+        
+        const PackingSelect = ({ label, options, value, onChange }) => (
+            <div className="flex flex-col gap-1 py-1">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</span>
+                <div className="flex bg-slate-100 p-1 rounded-md">
+                    {options.map(opt => (
+                        <button 
+                            key={opt}
+                            onClick={() => onChange(opt)}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
+                                value === opt 
+                                    ? 'bg-white text-indigo-700 shadow-sm border border-slate-200' 
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
+                            }`}
+                        >{opt}</button>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const ComplianceCheckbox = ({ label, checked, onChange, isBold }) => (
+            <label className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-all border border-transparent hover:border-slate-100">
+                <div className="relative flex items-center mt-0.5">
+                    <input 
+                        type="checkbox" 
+                        checked={checked} 
+                        onChange={onChange} 
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-300 bg-white checked:bg-indigo-600 checked:border-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all" 
+                    />
+                    <svg className="absolute w-3.5 h-3.5 text-white left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <span className={`text-sm leading-tight pt-0.5 ${isBold ? 'font-bold text-indigo-900' : 'text-slate-700 font-medium'}`}>{label}</span>
+            </label>
+        );
+
         function App() {
             const [globalData, setGlobalData] = useState({
                 companyName: "Allura Imports Inc.",
                 address: "1407 Broadway Suite 401, New York, NY 10018",
                 phone: "(212) 695-4510",
-                legal: "ALL PRODUCT MUST BE LEAD FREE AS PER CPSIA REGULATIONS.\nDOCUMENTS MUST BE ACCOMPANIED BY TEST REPORT ISSUED FROM THIRD PARTY TESTING FACILITY CERTIFIYING MERCHANDISE IS COMPLIANT WITH CPSIA STANDARDS"
+                legal: "ALL PRODUCT MUST BE LEAD FREE AS PER CPSIA REGULATIONS.\nDOCUMENTS MUST BE ACCOMPANIED BY TEST REPORT ISSUED FROM THIRD PARTY TESTING FACILITY CERTIFIYING MERCHANDISE IS COMPLIANT WITH CPSIA STANDARDS. SHIPPING CARTONS WEIGHT MUST NOT EXCEED 40 LBS."
             });
 
             const [poDetails, setPoDetails] = useState({
@@ -204,10 +445,32 @@
                 bottomFabric: ""
             });
 
-            const [csvData, setCsvData] = useState([]);
-            const [styleImages, setStyleImages] = useState({}); // Stores { data: base64, width: num, height: num }
-            const [baseStyleMap, setBaseStyleMap] = useState({});
+            // Special Instructions States
+            const [isSpecialInstructionsOpen, setIsSpecialInstructionsOpen] = useState(false);
             
+            const [compliance, setCompliance] = useState({
+                cpsiaLeadSubstrate: true,
+                cpsiaLeadPaint: true,
+                flammabilityClothing: false,
+                flammabilitySleepwear: false,
+                fullInspection: false
+            });
+
+            const [packing, setPacking] = useState({
+                preTicket: false,
+                hangers: false,
+                sizeTab: false,
+                innerCareLabel: false,
+                trackingLabel: false,
+                waistSizeTag: false,
+                hangTag: false,
+                polybags: 'Indv.',
+                colorAsst: 'No'
+            });
+
+            const [csvData, setCsvData] = useState([]);
+            const [styleImages, setStyleImages] = useState({});
+            const [baseStyleMap, setBaseStyleMap] = useState({});
             const [remarks, setRemarks] = useState("");
             const [fileName, setFileName] = useState("");
             const [isDragActive, setIsDragActive] = useState(false);
@@ -215,7 +478,7 @@
             
             const loadFileInputRef = useRef(null);
 
-            // --- AUTO-SAVE / PERSISTENCE ---
+            // --- AUTO-SAVE ---
             useEffect(() => {
                 const savedData = localStorage.getItem("allura_po_draft");
                 if (savedData) {
@@ -224,6 +487,8 @@
                         if (parsed.poDetails) setPoDetails(parsed.poDetails);
                         if (parsed.csvData) setCsvData(parsed.csvData);
                         if (parsed.remarks) setRemarks(parsed.remarks);
+                        if (parsed.compliance) setCompliance(parsed.compliance);
+                        if (parsed.packing) setPacking(parsed.packing);
                     } catch (e) {
                         console.error("Failed to load draft", e);
                     }
@@ -231,9 +496,9 @@
             }, []);
 
             useEffect(() => {
-                const dataToSave = { poDetails, csvData, remarks };
+                const dataToSave = { poDetails, csvData, remarks, compliance, packing };
                 localStorage.setItem("allura_po_draft", JSON.stringify(dataToSave));
-            }, [poDetails, csvData, remarks]);
+            }, [poDetails, csvData, remarks, compliance, packing]);
 
             useEffect(() => {
                 if (csvData.length > 0) {
@@ -265,6 +530,8 @@
                     poDetails,
                     csvData,
                     remarks,
+                    compliance,
+                    packing
                 };
                 const blob = new Blob([JSON.stringify(jobData, null, 2)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -285,6 +552,8 @@
                         if (parsed.poDetails) setPoDetails(parsed.poDetails);
                         if (parsed.csvData) setCsvData(parsed.csvData);
                         if (parsed.remarks) setRemarks(parsed.remarks);
+                        if (parsed.compliance) setCompliance(parsed.compliance);
+                        if (parsed.packing) setPacking(parsed.packing);
                         alert("Job loaded successfully!");
                     } catch (err) {
                         alert("Error loading file.");
@@ -294,7 +563,6 @@
                 e.target.value = null; 
             };
 
-            // Clear Functions
             const clearHeader = () => {
                 if(confirm("Clear only the header (Order Specifics)?")) {
                     setPoDetails({
@@ -319,7 +587,6 @@
                 }
             };
 
-            // --- HANDLERS ---
             const handleInput = (e) => {
                 setPoDetails({ ...poDetails, [e.target.name]: e.target.value });
                 if (errors[e.target.name]) {
@@ -327,11 +594,22 @@
                 }
             };
 
+            const handleCompliance = (key) => {
+                setCompliance(prev => ({ ...prev, [key]: !prev[key] }));
+            };
+
+            const handlePackingToggle = (key) => {
+                setPacking(prev => ({ ...prev, [key]: !prev[key] }));
+            };
+            
+            const handlePackingSelect = (key, val) => {
+                setPacking(prev => ({ ...prev, [key]: val }));
+            };
+
             const handleImageUpload = (baseStyle, file) => {
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    // Create image to get dimensions
                     const img = new Image();
                     img.onload = () => {
                         setStyleImages(prev => ({
@@ -353,7 +631,6 @@
                             const blob = await item.getType(imageType);
                             const reader = new FileReader();
                             reader.onloadend = () => {
-                                // Create image to get dimensions
                                 const img = new Image();
                                 img.onload = () => {
                                     setStyleImages(prev => ({
@@ -399,10 +676,7 @@
                 });
             };
 
-            const handleFileUpload = (e) => {
-                parseFile(e.target.files[0]);
-            };
-
+            const handleFileUpload = (e) => { parseFile(e.target.files[0]); };
             const handleDragEnter = (e) => { e.preventDefault(); setIsDragActive(true); };
             const handleDragLeave = (e) => { e.preventDefault(); setIsDragActive(false); };
             const handleDragOver = (e) => { e.preventDefault(); };
@@ -439,9 +713,7 @@
             const calculateInners = (master, inner) => {
                 if (!master) return "";
                 const parenMatch = master.toString().match(/\((\d+)\)/);
-                if (parenMatch) {
-                    return parseInt(parenMatch[1], 10);
-                }
+                if (parenMatch) { return parseInt(parenMatch[1], 10); }
                 const m = extractFirstNumber(master);
                 const i = extractFirstNumber(inner);
                 if (m > 0 && i > 0) return Math.floor(m / i);
@@ -460,14 +732,11 @@
                         msrp = Math.ceil(rawMsrp / 5) * 5;
                     }
                     let contentStr = "";
-                    if (poDetails.topFabric) {
-                        contentStr += `TOP ${poDetails.topFabric}`;
-                    }
+                    if (poDetails.topFabric) contentStr += `TOP ${poDetails.topFabric}`;
                     if (poDetails.bottomFabric) {
                         if (contentStr) contentStr += ", ";
                         contentStr += `BOTTOM ${poDetails.bottomFabric}`;
                     }
-
                     return {
                         "Style Number": row['Style Number'],
                         "Pack-ID": "",
@@ -515,19 +784,14 @@
                 window.URL.revokeObjectURL(url);
             };
 
-            // NEW: Download PO Import Data (Simple Format)
             const downloadPOImportData = () => {
                 if (csvData.length === 0) return;
-                
-                const exportData = csvData.map(row => {
-                    return {
-                        "Style No.": row['Style Number'],
-                        "Pack ID": "", // Left blank as requested
-                        "Price": row['Price Per Pc'],
-                        "Quantity": row['Pcs'] // Using Order Quantity
-                    };
-                });
-
+                const exportData = csvData.map(row => ({
+                    "Style No.": row['Style Number'],
+                    "Pack ID": "",
+                    "Price": row['Price Per Pc'],
+                    "Quantity": row['Pcs']
+                }));
                 const csv = Papa.unparse(exportData);
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
@@ -548,7 +812,7 @@
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
                 const pageWidth = doc.internal.pageSize.getWidth(); 
                 const pageHeight = doc.internal.pageSize.getHeight(); 
-                const margin = 20; 
+                const margin = 15; 
                 const contentWidth = pageWidth - (margin * 2);
                 const rightAlignX = pageWidth - margin;
 
@@ -573,228 +837,156 @@
                     styleRows.forEach(r => { tPcs += r.pcs; tDz += parseFloat(r.dz); tAmt += parseFloat(r.amount); });
 
                     // Header
-                    doc.setFontSize(14);
-                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14); doc.setFont("helvetica", "bold");
                     doc.text(globalData.companyName, margin, 15);
-                    doc.setFontSize(9);
-                    doc.setFont("helvetica", "normal");
-                    doc.setTextColor(80);
+                    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80);
                     doc.text(globalData.address, margin, 20);
                     doc.text(globalData.phone, margin, 24);
                     doc.setTextColor(0);
 
-                    doc.setFontSize(16);
-                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(16); doc.setFont("helvetica", "bold");
                     doc.text("PURCHASE ORDER", rightAlignX, 15, { align: "right" });
-                    doc.setFontSize(12);
-                    doc.setTextColor(100);
+                    doc.setFontSize(12); doc.setTextColor(100);
                     doc.text(`PO #: ${poDetails.poNumber}`, rightAlignX, 22, { align: "right" });
                     doc.setTextColor(0);
 
                     // Date Strip
                     doc.setDrawColor(220);
-                    doc.line(margin, 30, rightAlignX, 30);
-                    const dateY = 35;
-                    const thirdWidth = contentWidth / 3;
-                    doc.setFontSize(8);
-                    doc.setFont("helvetica", "bold");
-                    doc.setTextColor(100);
+                    doc.line(margin, 28, rightAlignX, 28);
+                    const dateY = 33; const thirdWidth = contentWidth / 3;
+                    doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(100);
                     doc.text("PO DATE", margin, dateY);
                     doc.text("SHIP DATE (EX-FACTORY)", margin + thirdWidth, dateY);
                     doc.text("CANCEL DATE", margin + (thirdWidth * 2), dateY);
-                    doc.setFontSize(10);
-                    doc.setFont("helvetica", "bold");
-                    doc.setTextColor(0);
+                    doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(0);
                     doc.text(poDetails.poDate, margin, dateY + 5);
                     doc.text(poDetails.shipDate, margin + thirdWidth, dateY + 5);
                     doc.text(poDetails.cancelDate, margin + (thirdWidth * 2), dateY + 5);
-                    doc.line(margin, 44, rightAlignX, 44);
+                    doc.line(margin, 42, rightAlignX, 42);
 
                     // Info Grid
                     const headerData = [
-                        [
-                            { content: 'Vendor:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.vendor,
-                            { content: 'Origin:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            finalOrigin,
-                        ],
-                        [
-                            { content: 'Ship Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            finalShipTerms,
-                            { content: 'Pay Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            finalPayTerms,
-                        ],
-                         [
-                            { content: 'Season/Year:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            `${poDetails.season} / ${poDetails.year}`,
-                            { content: 'Destination:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.destination,
-                        ],
-                         [
-                            { content: 'Department:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.department,
-                            { content: 'Gender:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.gender,
-                        ],
-                        [
-                            { content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.class,
-                            { content: 'Sub Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.subClass,
-                        ],
-                        [
-                            { content: 'Label / Brand:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.labelBrand,
-                            { content: 'Royalty Code:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.royaltyCode,
-                        ],
-                         [
-                            { content: 'Top Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.topFabric,
-                            { content: 'Bot Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-                            poDetails.bottomFabric,
-                        ]
+                        [{ content: 'Vendor:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.vendor, { content: 'Origin:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, finalOrigin],
+                        [{ content: 'Ship Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, finalShipTerms, { content: 'Pay Terms:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, finalPayTerms],
+                        [{ content: 'Season/Year:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, `${poDetails.season} / ${poDetails.year}`, { content: 'Destination:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.destination],
+                        [{ content: 'Department:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.department, { content: 'Gender:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.gender],
+                        [{ content: 'Class:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.class, { content: 'Sub Group:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.subClass],
+                        [{ content: 'Label / Brand:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.labelBrand, { content: 'Royalty Code:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.royaltyCode],
+                        [{ content: 'Top Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.topFabric, { content: 'Bot Fabric:', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } }, poDetails.bottomFabric]
                     ];
 
                     doc.autoTable({
-                        startY: 48,
-                        body: headerData,
-                        theme: 'plain',
-                        margin: { left: margin, right: margin },
+                        startY: 46, body: headerData, theme: 'plain', margin: { left: margin, right: margin },
                         styles: { fontSize: 8, cellPadding: 1.5, lineColor: [220, 220, 220], lineWidth: 0.1 },
-                        columnStyles: {
-                            0: { cellWidth: 25 }, 
-                            1: { cellWidth: (contentWidth - 50) / 2 }, 
-                            2: { cellWidth: 25 },
-                            3: { cellWidth: (contentWidth - 50) / 2 }
-                        }
+                        columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: (contentWidth - 50) / 2 }, 2: { cellWidth: 25 }, 3: { cellWidth: (contentWidth - 50) / 2 } }
                     });
                     
                     let descY = doc.lastAutoTable.finalY + 4;
-                    doc.setFillColor(240, 242, 245); 
-                    doc.rect(margin, descY, contentWidth, 10, 'F');
-                    doc.setDrawColor(220);
-                    doc.rect(margin, descY, contentWidth, 10, 'S');
-                    doc.setFontSize(8);
-                    doc.setFont("helvetica", "bold");
-                    doc.setTextColor(100);
+                    doc.setFillColor(240, 242, 245); doc.rect(margin, descY, contentWidth, 10, 'F');
+                    doc.setDrawColor(220); doc.rect(margin, descY, contentWidth, 10, 'S');
+                    doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(100);
                     doc.text("ITEM DESCRIPTION", margin + 2, descY + 3.5);
-                    doc.setFontSize(11);
-                    doc.setTextColor(0);
-                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(11); doc.setTextColor(0); doc.setFont("helvetica", "bold");
                     doc.text(poDetails.itemDesc.toUpperCase() || "N/A", margin + 2, descY + 7.5);
 
                     const tableBody = styleRows.map(row => [
-                        row['Style Number'],
-                        row['Sizes'],
-                        row['Inner Colorway 1'],
-                        row['Inner Colorway 2'],
-                        row['Master Packing'] || '-', 
-                        row['Inner Packing'] || '-', 
-                        row.pcs,
-                        row.dz, 
-                        `$${row.price.toFixed(2)}`,
-                        `$${(row.price * 12).toFixed(2)}`, 
-                        `$${row.amount}`
+                        row['Style Number'], row['Sizes'], row['Inner Colorway 1'], row['Inner Colorway 2'], row['Master Packing'] || '-', row['Inner Packing'] || '-', row.pcs, row.dz, `$${row.price.toFixed(2)}`, `$${(row.price * 12).toFixed(2)}`, `$${row.amount}`
                     ]);
 
                     doc.autoTable({
                         startY: descY + 13,
                         head: [['Style #', 'Size', 'Color 1', 'Color 2', 'Master Pk', 'Inner Pk', 'Pcs', 'Dz', 'Price', 'Price/Dz', 'Amount']],
-                        body: tableBody,
-                        theme: 'grid',
-                        margin: { left: margin, right: margin },
-                        headStyles: { fillColor: [30, 41, 59], fontSize: 7.5, valign: 'middle', halign: 'center' }, 
-                        bodyStyles: { fontSize: 7.5, valign: 'middle', halign: 'center' }, 
-                        columnStyles: {
-                            0: { fontStyle: 'bold' },
-                            10: { halign: 'right' } 
-                        }
+                        body: tableBody, theme: 'grid', margin: { left: margin, right: margin },
+                        headStyles: { fillColor: [30, 41, 59], fontSize: 7.5, valign: 'middle', halign: 'center' },
+                        bodyStyles: { fontSize: 7.5, valign: 'middle', halign: 'center' },
+                        columnStyles: { 0: { fontStyle: 'bold' }, 10: { halign: 'right' } }
                     });
 
-                    const boxY = doc.lastAutoTable.finalY + 5;
-                    const boxW = 60; 
-                    const boxH = 60; 
-                    const boxX = (pageWidth - boxW) / 2; 
+                    let totalsY = doc.lastAutoTable.finalY + 2; 
+                    
+                    const footerHeight = 12; const remarksHeight = 25;
+                    let remarksBoxY = pageHeight - margin - footerHeight - remarksHeight;
+                    const sectionH = 65; const gapAfterTotals = 14;
+                    
+                    if (totalsY + 10 + gapAfterTotals + sectionH > remarksBoxY) {
+                        doc.addPage(); totalsY = margin;
+                        remarksBoxY = pageHeight - margin - footerHeight - remarksHeight;
+                    }
+
+                    doc.setFillColor(248, 250, 252); doc.rect(margin, totalsY, contentWidth, 10, 'F');
+                    doc.setFontSize(9); doc.setFont("helvetica", "bold");
+                    doc.text("PAGE TOTALS", margin + 4, totalsY + 6.5);
+                    doc.setFont("helvetica", "normal");
+                    const unitsX = margin + (contentWidth * 0.35); const dozX = margin + (contentWidth * 0.55); const totalX = rightAlignX - 2; 
+                    doc.text(`Units: ${tPcs}`, unitsX, totalsY + 6.5); doc.text(`Dozens: ${tDz.toFixed(2)}`, dozX, totalsY + 6.5);
+                    doc.setFont("helvetica", "bold"); doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, totalsY + 6.5, { align: 'right' });
+
+                    const layoutY = totalsY + 10 + gapAfterTotals;
+                    const imgBoxW = contentWidth * 0.42; const imgBoxH = sectionH; const gap = 4;
+                    const instructionsX = margin + imgBoxW + gap; const instructionsW = contentWidth - imgBoxW - gap;
 
                     const imgObj = styleImages[baseStyle];
-
                     if (imgObj) {
                         const { data, width, height } = imgObj;
-                        // Calculate Aspect Ratio Contain Logic
-                        const imgRatio = width / height;
-                        const boxRatio = boxW / boxH;
-                        
-                        let drawW = boxW;
-                        let drawH = boxH;
-                        
-                        if (imgRatio > boxRatio) {
-                            // Image is wider than box (relative to ratio), constrain by width
-                            drawH = boxW / imgRatio;
-                        } else {
-                            // Image is taller than box, constrain by height
-                            drawW = boxH * imgRatio;
-                        }
-                        
-                        // Center the image in the box
-                        const drawX = boxX + (boxW - drawW) / 2;
-                        const drawY = boxY + (boxH - drawH) / 2;
-
+                        const imgRatio = width / height; const boxRatio = imgBoxW / imgBoxH;
+                        let drawW = imgBoxW; let drawH = imgBoxH;
+                        if (imgRatio > boxRatio) { drawH = imgBoxW / imgRatio; } else { drawW = imgBoxH * imgRatio; }
+                        const drawX = margin + (imgBoxW - drawW) / 2; const drawY = layoutY + (imgBoxH - drawH) / 2;
                         doc.addImage(data, 'JPEG', drawX, drawY, drawW, drawH);
-                        
-                        // Optional: Draw the border of the placeholder box for reference
-                        doc.setDrawColor(200);
-                        doc.setLineWidth(0.1);
-                        doc.rect(boxX, boxY, boxW, boxH);
+                        doc.setDrawColor(200); doc.setLineWidth(0.1); doc.rect(margin, layoutY, imgBoxW, imgBoxH);
                     } else {
-                        // Placeholder
-                        doc.setDrawColor(200);
-                        doc.setLineWidth(0.2);
-                        doc.rect(boxX, boxY, boxW, boxH);
-                        doc.setFontSize(8);
-                        doc.setTextColor(150);
-                        doc.text("Paste Image / Swatch Here", pageWidth / 2, boxY + (boxH/2), { align: 'center' });
-                        doc.setTextColor(0);
+                        doc.setDrawColor(200); doc.setLineWidth(0.2); doc.rect(margin, layoutY, imgBoxW, imgBoxH);
+                        doc.setFontSize(8); doc.setTextColor(150); doc.text("No Image", margin + (imgBoxW/2), layoutY + (imgBoxH/2), { align: 'center' }); doc.setTextColor(0);
                     }
 
-                    let finalY = boxY + boxH + 5; 
-                    if (finalY + 45 > pageHeight) {
-                        doc.addPage();
-                        finalY = 20;
-                    }
+                    const instrCol1W = instructionsW * 0.5; const instrCol2X = instructionsX + instrCol1W; const instrCol2W = instructionsW * 0.5;
+                    doc.setFillColor(240, 242, 245); doc.rect(instructionsX, layoutY, instrCol1W, 7, 'F'); doc.rect(instrCol2X, layoutY, instrCol2W, 7, 'F');
+                    doc.setFontSize(6.5); doc.setFont("helvetica", "bold"); doc.setTextColor(50);
+                    doc.text("TESTING & INSPECTION", instructionsX + 2, layoutY + 4.5); doc.text("PACKING DETAIL", instrCol2X + 2, layoutY + 4.5);
+                    doc.setDrawColor(200); doc.setLineWidth(0.1);
+                    doc.line(instructionsX, layoutY + 7, instructionsX + instrCol1W, layoutY + 7); doc.line(instrCol2X, layoutY + 7, instrCol2X + instrCol2W, layoutY + 7);
 
-                    doc.setFillColor(248, 250, 252);
-                    doc.rect(margin, finalY, contentWidth, 12, 'F');
-                    doc.setFontSize(10);
-                    doc.setFont("helvetica", "bold");
-                    doc.text("PAGE TOTALS", margin + 4, finalY + 8);
-                    doc.setFont("helvetica", "normal");
-                    
-                    const unitsX = margin + (contentWidth * 0.35);
-                    const dozX = margin + (contentWidth * 0.55);
-                    const totalX = rightAlignX - 2; 
+                    doc.setFont("helvetica", "normal"); doc.setTextColor(0);
+                    let checkY = layoutY + 11; const checkSize = 3;
+                    const drawCheckItem = (label, checked) => {
+                        doc.setDrawColor(150); doc.rect(instructionsX + 2, checkY, checkSize, checkSize); 
+                        if(checked) { doc.setFont("zapfdingbats"); doc.setFontSize(8); doc.text("4", instructionsX + 2.4, checkY + 2.2); doc.setFont("helvetica", "normal"); }
+                        doc.setFontSize(6.5); const textW = instrCol1W - 8; const splitText = doc.splitTextToSize(label, textW);
+                        doc.text(splitText, instructionsX + 6.5, checkY + 2.5);
+                        const lineCount = splitText.length; checkY += (lineCount * 3.5) + 3; 
+                    };
+                    drawCheckItem("CPSIA 101 – Lead in Substrate of Children’s Products", compliance.cpsiaLeadSubstrate);
+                    drawCheckItem("CPSIA 101, 16 CFR 1303 – Lead in Paint & Coatings", compliance.cpsiaLeadPaint);
+                    drawCheckItem("16 CFR 1610 - Flammability of Clothing Textiles", compliance.flammabilityClothing);
+                    drawCheckItem("16 CFR 1615/1616 - Flammability of Children’s Sleepwear", compliance.flammabilitySleepwear);
+                    drawCheckItem("FULL INSPECTION REPORT", compliance.fullInspection);
 
-                    doc.text(`Units: ${tPcs}`, unitsX, finalY + 8);
-                    doc.text(`Dozens: ${tDz.toFixed(2)}`, dozX, finalY + 8);
-                    doc.setFont("helvetica", "bold");
-                    doc.text(`Total: $${tAmt.toFixed(2)}`, totalX, finalY + 8, { align: 'right' });
+                    const rowH = (sectionH - 7) / 9; let gridY = layoutY + 7;
+                    const packLabels = [
+                        { l: "Pre-ticket", v: packing.preTicket }, { l: "Tracking Lbl", v: packing.trackingLabel }, { l: "Hangers", v: packing.hangers },
+                        { l: "Waist Tag", v: packing.waistSizeTag }, { l: "Size Tab", v: packing.sizeTab }, { l: "Hang Tag", v: packing.hangTag },
+                        { l: "Inner Care", v: packing.innerCareLabel }, { l: "Polybags", v: packing.polybags.toUpperCase(), isText: true }, { l: "Color Asst", v: packing.colorAsst.toUpperCase(), isText: true }
+                    ];
+                    packLabels.forEach((item, idx) => {
+                        const cellY = gridY + (idx * rowH);
+                        if (idx > 0) { doc.setDrawColor(230); doc.line(instrCol2X, cellY, instrCol2X + instrCol2W, cellY); }
+                        const textY = cellY + (rowH / 2) + 1;
+                        doc.setFont("helvetica", "normal"); doc.setTextColor(80); doc.setFontSize(7); doc.text(item.l, instrCol2X + 3, textY);
+                        doc.setFont("helvetica", "bold"); doc.setFontSize(7.5);
+                        if (item.isText) { doc.setTextColor(0); doc.text(String(item.v), instrCol2X + instrCol2W - 3, textY, { align: 'right' }); } 
+                        else { if(item.v) { doc.setTextColor(0); doc.text("YES", instrCol2X + instrCol2W - 3, textY, { align: 'right' }); } else { doc.setTextColor(200); doc.text("NO", instrCol2X + instrCol2W - 3, textY, { align: 'right' }); } }
+                    });
 
-                    doc.setDrawColor(220);
-                    const remarksBoxY = finalY + 18;
-                    doc.roundedRect(margin, remarksBoxY, contentWidth, 20, 1, 1);
-                    doc.setFontSize(8);
-                    doc.setFont("helvetica", "bold");
-                    doc.text("Remarks:", margin + 2, remarksBoxY + 5);
-                    doc.setFont("helvetica", "normal");
-                    const remarksText = remarks.trim() || "No remarks";
-                    doc.text(remarksText, margin + 18, remarksBoxY + 5, { maxWidth: contentWidth - 22 });
+                    doc.setDrawColor(200); doc.setLineWidth(0.1); doc.rect(instructionsX, layoutY, instrCol1W, sectionH); doc.rect(instrCol2X, layoutY, instrCol2W, sectionH);
 
-                    doc.setFontSize(8);
-                    doc.setFont("helvetica", "bold");
-                    doc.setTextColor(0);
-                    const legalText = globalData.legal.replace(/\n/g, " "); 
-                    const splitLegal = doc.splitTextToSize(legalText, contentWidth);
-                    doc.text(splitLegal, pageWidth / 2, remarksBoxY + 28, { align: "center" });
+                    doc.setDrawColor(220); doc.setLineWidth(0.3); doc.roundedRect(margin, remarksBoxY, contentWidth, remarksHeight, 1, 1);
+                    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(0); doc.text("Remarks / Special Instructions:", margin + 3, remarksBoxY + 5);
+                    doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(220, 38, 38);
+                    const remarksText = remarks.trim() || "No remarks"; const splitRemarks = doc.splitTextToSize(remarksText, contentWidth - 6); doc.text(splitRemarks, margin + 3, remarksBoxY + 10);
+
+                    doc.setFontSize(7); doc.setFont("helvetica", "bold"); doc.setTextColor(80);
+                    const legalText = globalData.legal.replace(/\n/g, " "); const splitLegal = doc.splitTextToSize(legalText, contentWidth);
+                    const footerY = pageHeight - margin - 2; doc.text(splitLegal, pageWidth / 2, footerY, { align: "center", baseline: "bottom" });
                 });
 
                 doc.save(`PO_${poDetails.poNumber || 'Draft'}.pdf`);
@@ -804,354 +996,117 @@
 
             return (
                 <div className="max-w-5xl mx-auto w-full md:w-auto my-4 md:my-10 bg-white rounded-lg md:rounded-xl shadow-xl overflow-hidden border border-gray-100">
-                    {/* Header */}
                     <div className="bg-slate-900 p-4 md:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="mb-2 md:mb-0">
                             <h1 className="text-xl md:text-3xl font-bold tracking-tight">Production PO Generator</h1>
                             <p className="text-slate-400 mt-1 md:mt-2 text-xs md:text-base">Create official, compliant purchase orders in seconds.</p>
                         </div>
-                        {/* TOP ACTIONS */}
                         <div className="flex flex-wrap gap-2 w-full md:w-auto">
                              <input type="file" accept=".json" ref={loadFileInputRef} className="hidden" onChange={loadJobFile} />
                              <button onClick={() => loadFileInputRef.current.click()} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Load Job
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Load Job
                              </button>
                              <button onClick={saveJobFile} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-semibold flex items-center gap-2 transition shadow-sm">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3M16 3H8v4h8V3zm0 14v-4H8v4h8z"></path></svg>
-                                Save Job
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3M16 3H8v4h8V3zm0 14v-4H8v4h8z"></path></svg> Save Job
                              </button>
-                             {/* Clear Header Button */}
-                             <button onClick={clearHeader} className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition shadow-sm">
-                                Clear Header
-                             </button>
+                             <button onClick={clearHeader} className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold transition shadow-sm">Clear Header</button>
                         </div>
                     </div>
                     
-                    {/* Auto-Save Notification */}
                     <div className="bg-blue-50 px-6 py-2 text-xs text-blue-600 flex justify-between items-center border-b border-blue-100">
                         <span><span className="font-bold">Tip:</span> Use "Save Job File" to create a template for future orders. Your current work is also auto-saved to this browser.</span>
                     </div>
 
                     <div className="p-4 md:p-8 space-y-6 md:space-y-8">
-                        
-                        {/* SECTION 1: Order Specifics */}
                         <div className="bg-white rounded-lg"> 
-                            <div className="section-header mb-4">
-                                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                1. Order Specifics
-                            </div>
-                            
+                            <div className="section-header mb-4"><svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>1. Order Specifics</div>
                             <div className="space-y-4">
-                                {/* Row 1: Core Identifiers */}
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                    <div className="md:col-span-4">
-                                        <label className="input-label">PO Number</label>
-                                        <input type="text" name="poNumber" placeholder="e.g., 450021" value={poDetails.poNumber} onChange={handleInput} className="input-field font-semibold text-slate-800" />
-                                    </div>
-                                    <div className="md:col-span-8">
-                                        <label className="input-label">Vendor Name</label>
-                                        <input type="text" name="vendor" placeholder="e.g. ABC Factories Ltd." value={poDetails.vendor} onChange={handleInput} className="input-field" />
-                                    </div>
+                                    <div className="md:col-span-4"><label className="input-label">PO Number</label><input type="text" name="poNumber" placeholder="e.g., 450021" value={poDetails.poNumber} onChange={handleInput} className="input-field font-semibold text-slate-800" /></div>
+                                    <div className="md:col-span-8"><label className="input-label">Vendor Name</label><input type="text" name="vendor" placeholder="e.g. ABC Factories Ltd." value={poDetails.vendor} onChange={handleInput} className="input-field" /></div>
                                 </div>
-
-                                {/* Row 2: Dates */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="input-label">PO Date</label>
-                                        <input type="date" name="poDate" value={poDetails.poDate} onChange={handleInput} className="input-field" />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Ship Date (Ex-Factory)</label>
-                                        <input type="date" name="shipDate" value={poDetails.shipDate} onChange={handleInput} className="input-field" />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Cancel Date</label>
-                                        <input type="date" name="cancelDate" value={poDetails.cancelDate} onChange={handleInput} className="input-field" />
-                                    </div>
+                                    <div><label className="input-label">PO Date</label><input type="date" name="poDate" value={poDetails.poDate} onChange={handleInput} className="input-field" /></div>
+                                    <div><label className="input-label">Ship Date (Ex-Factory)</label><input type="date" name="shipDate" value={poDetails.shipDate} onChange={handleInput} className="input-field" /></div>
+                                    <div><label className="input-label">Cancel Date</label><input type="date" name="cancelDate" value={poDetails.cancelDate} onChange={handleInput} className="input-field" /></div>
                                 </div>
-
-                                {/* Row 3: Logistics */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div>
-                                        <label className="input-label">Origin <span className="text-red-500">*</span></label>
-                                        <select name="origin" value={poDetails.origin} onChange={handleInput} className={`input-field ${errors.origin ? 'error' : ''}`}>
-                                            <option value="" disabled>Select...</option>
-                                            <option value="Egypt">Egypt</option>
-                                            <option value="Bangladesh">Bangladesh</option>
-                                            <option value="China">China</option>
-                                            <option value="Pakistan">Pakistan</option>
-                                            <option value="India">India</option>
-                                            <option value="Other">Other (Specify)</option>
-                                        </select>
-                                        {poDetails.origin === 'Other' && (
-                                            <input type="text" name="originOther" placeholder="Type Country..." value={poDetails.originOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
-                                        )}
+                                        <SearchableSelect label="Origin" name="origin" value={poDetails.origin} options={ORIGIN_OPTIONS} onChange={handleInput} required={true} error={errors.origin} />
+                                        {poDetails.origin === 'Other' && (<input type="text" name="originOther" placeholder="Type Country..." value={poDetails.originOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />)}
+                                    </div>
+                                    <div><SearchableSelect label="Destination" name="destination" value={poDetails.destination} options={DESTINATION_OPTIONS} onChange={handleInput} /></div>
+                                    <div>
+                                        <SearchableSelect label="Ship Terms" name="shipTerms" value={poDetails.shipTerms} options={SHIP_TERMS_OPTIONS} onChange={handleInput} required={true} error={errors.shipTerms} />
+                                        {poDetails.shipTerms === 'Other' && (<input type="text" name="shipTermsOther" placeholder="Specify Terms" value={poDetails.shipTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />)}
                                     </div>
                                     <div>
-                                        <label className="input-label">Destination</label>
-                                        <select name="destination" value={poDetails.destination} onChange={handleInput} className="input-field">
-                                            <option value="NY">New York (NY)</option>
-                                            <option value="LA">Los Angeles (LA)</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Ship Terms <span className="text-red-500">*</span></label>
-                                        <select name="shipTerms" value={poDetails.shipTerms} onChange={handleInput} className={`input-field ${errors.shipTerms ? 'error' : ''}`}>
-                                            <option value="" disabled>Select...</option>
-                                            <option value="FOB">FOB</option>
-                                            <option value="DDP">DDP</option>
-                                            <option value="LDP">LDP</option>
-                                            <option value="CIF">CIF</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                        {poDetails.shipTerms === 'Other' && (
-                                            <input type="text" name="shipTermsOther" placeholder="Specify Terms" value={poDetails.shipTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Pay Terms <span className="text-red-500">*</span></label>
-                                        <select name="payTerms" value={poDetails.payTerms} onChange={handleInput} className={`input-field ${errors.payTerms ? 'error' : ''}`}>
-                                            <option value="" disabled>Select...</option>
-                                            <option value="Net 30">Net 30</option>
-                                            <option value="Net 60">Net 60</option>
-                                            <option value="L/C">L/C</option>
-                                            <option value="LDP">LDP</option>
-                                            <option value="TT">TT</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                        {poDetails.payTerms === 'Other' && (
-                                            <input type="text" name="payTermsOther" placeholder="Specify Terms" value={poDetails.payTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />
-                                        )}
+                                        <SearchableSelect label="Pay Terms" name="payTerms" value={poDetails.payTerms} options={PAY_TERMS_OPTIONS} onChange={handleInput} required={true} error={errors.payTerms} />
+                                        {poDetails.payTerms === 'Other' && (<input type="text" name="payTermsOther" placeholder="Specify Terms" value={poDetails.payTermsOther} onChange={handleInput} className="input-field mt-2 bg-yellow-50" />)}
                                     </div>
                                 </div>
-
-                                {/* Row 4: Classification */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div>
-                                        <label className="input-label">Department <span className="text-red-500">*</span></label>
-                                        <select name="department" value={poDetails.department} onChange={handleInput} className={`input-field ${errors.department ? 'error' : ''}`}>
-                                            <option value="" disabled>Select...</option>
-                                            {DEPARTMENT_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Gender</label>
-                                        <select name="gender" value={poDetails.gender} onChange={handleInput} className="input-field">
-                                            <option value="" disabled>Select...</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Unisex">Unisex</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Season</label>
-                                        <select name="season" value={poDetails.season} onChange={handleInput} className="input-field">
-                                            <option value="Spring">Spring</option>
-                                            <option value="Fall">Fall</option>
-                                            <option value="Summer">Summer</option>
-                                            <option value="Holiday">Holiday</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Year</label>
-                                        <input type="number" name="year" value={poDetails.year} onChange={handleInput} className="input-field" />
-                                    </div>
+                                    <div><SearchableSelect label="Department" name="department" value={poDetails.department} options={DEPARTMENT_OPTIONS} onChange={handleInput} required={true} error={errors.department} /></div>
+                                    <div><SearchableSelect label="Gender" name="gender" value={poDetails.gender} options={GENDER_OPTIONS} onChange={handleInput} /></div>
+                                    <div><SearchableSelect label="Season" name="season" value={poDetails.season} options={SEASON_OPTIONS} onChange={handleInput} /></div>
+                                    <div><label className="input-label">Year</label><input type="number" name="year" value={poDetails.year} onChange={handleInput} className="input-field" /></div>
                                 </div>
-
-                                {/* Row 5: Product Details */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div>
-                                        <label className="input-label">Label / Brand</label>
-                                        <input type="text" name="labelBrand" placeholder="e.g. Allura" value={poDetails.labelBrand} onChange={handleInput} className="input-field" />
-                                    </div>
-                                     <div>
-                                         <label className="input-label">Royalty Code</label>
-                                        <select 
-                                            name="royaltyCode" 
-                                            value={poDetails.royaltyCode} 
-                                            onChange={handleInput} 
-                                            className="input-field"
-                                        >
-                                            <option value="">(None)</option>
-                                            {ROYALTY_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Class</label>
-                                        <input type="text" name="class" placeholder="e.g. Knits" value={poDetails.class} onChange={handleInput} className="input-field" />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Sub Class</label>
-                                        <input type="text" name="subClass" placeholder="e.g. Tees" value={poDetails.subClass} onChange={handleInput} className="input-field" />
-                                    </div>
+                                    <div><label className="input-label">Label / Brand</label><input type="text" name="labelBrand" placeholder="e.g. Allura" value={poDetails.labelBrand} onChange={handleInput} className="input-field" /></div>
+                                     <div><SearchableSelect label="Royalty Code" name="royaltyCode" value={poDetails.royaltyCode} options={ROYALTY_OPTIONS} onChange={handleInput} /></div>
+                                    <div><SearchableSelect label="Class" name="class" value={poDetails.class} options={CLASS_OPTIONS} onChange={handleInput} /></div>
+                                    <div><SearchableSelect label="Sub Group" name="subClass" value={poDetails.subClass} options={SUB_GROUP_OPTIONS} onChange={handleInput} /></div>
                                 </div>
-
-                                {/* Row 6: Fabrics & Item */}
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                    <div className="md:col-span-4">
-                                        <label className="input-label">Item Description</label>
-                                        <input type="text" name="itemDesc" placeholder="e.g. Crew Neck Tee" value={poDetails.itemDesc} onChange={handleInput} className="input-field" />
-                                    </div>
-                                    <div className="md:col-span-4">
-                                        <label className="input-label">Top Fabric</label>
-                                        <input type="text" name="topFabric" placeholder="e.g. 100% Cotton" value={poDetails.topFabric} onChange={handleInput} className="input-field" />
-                                    </div>
-                                    <div className="md:col-span-4">
-                                        <label className="input-label">Bottom Fabric</label>
-                                        <input type="text" name="bottomFabric" placeholder="e.g. N/A" value={poDetails.bottomFabric} onChange={handleInput} className="input-field" />
-                                    </div>
+                                    <div className="md:col-span-4"><label className="input-label">Item Description</label><input type="text" name="itemDesc" placeholder="e.g. Crew Neck Tee" value={poDetails.itemDesc} onChange={handleInput} className="input-field" /></div>
+                                    <div className="md:col-span-4"><label className="input-label">Top Fabric</label><input type="text" name="topFabric" placeholder="e.g. 100% Cotton" value={poDetails.topFabric} onChange={handleInput} className="input-field" /></div>
+                                    <div className="md:col-span-4"><label className="input-label">Bottom Fabric</label><input type="text" name="bottomFabric" placeholder="e.g. N/A" value={poDetails.bottomFabric} onChange={handleInput} className="input-field" /></div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* SECTION 2: Upload */}
                         <div>
                             <div className="section-header flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                    <span>2. Style Data Import</span>
-                                </div>
+                                <div className="flex items-center gap-2"><svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span>2. Style Data Import</span></div>
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full md:w-auto mt-2 md:mt-0">
-                                    <button onClick={clearImport} className="text-sm text-red-600 hover:text-red-800 font-medium underline flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        Clear Import
-                                    </button>
-                                    <button onClick={downloadTemplate} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline">
-                                        Download Template
-                                    </button>
+                                    <button onClick={clearImport} className="text-sm text-red-600 hover:text-red-800 font-medium underline flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Clear Import</button>
+                                    <button onClick={downloadTemplate} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline">Download Template</button>
                                 </div>
                             </div>
-
-                            <div 
-                                className={`border-2 border-dashed rounded-lg p-8 text-center transition relative group ${isDragActive ? 'drag-active' : 'border-slate-300 hover:bg-slate-50'}`}
-                                onDragEnter={handleDragEnter}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                            >
-                                <input 
-                                    type="file" 
-                                    accept=".csv" 
-                                    onChange={handleFileUpload} 
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                                />
+                            <div className={`border-2 border-dashed rounded-lg p-8 text-center transition relative group ${isDragActive ? 'drag-active' : 'border-slate-300 hover:bg-slate-50'}`} onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+                                <input type="file" accept=".csv" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                 <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition ${isDragActive ? 'bg-indigo-500 text-white scale-110' : 'bg-indigo-100 text-indigo-600'}`}>
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                    </div>
-                                    <span className="text-lg font-medium text-slate-700">
-                                        {fileName ? `File Loaded: ${fileName}` : "Drop CSV file here or click to upload"}
-                                    </span>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition ${isDragActive ? 'bg-indigo-500 text-white scale-110' : 'bg-indigo-100 text-indigo-600'}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                                    <span className="text-lg font-medium text-slate-700">{fileName ? `File Loaded: ${fileName}` : "Drop CSV file here or click to upload"}</span>
                                     <span className="text-sm text-slate-500">Required Columns: Style Number, Sizes, Pcs, Price Per Pc...</span>
                                 </div>
                             </div>
-
-                            {/* CSV Preview Table */}
                             {csvData.length > 0 && (
                                 <div className="mt-6">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <h3 className="text-sm font-bold text-slate-700">Data Preview (First 10 Rows)</h3>
-                                        <span className="text-xs text-slate-500">Total Rows: {csvData.length}</span>
-                                    </div>
-                                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                                        <table className="min-w-full text-sm text-left text-slate-600">
-                                            <thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-xs">
-                                                <tr>
-                                                    <th className="px-4 py-2">Style</th>
-                                                    <th className="px-4 py-2">Base (Calc)</th>
-                                                    <th className="px-4 py-2">Size</th>
-                                                    <th className="px-4 py-2">Color 1</th>
-                                                    <th className="px-4 py-2">Pcs</th>
-                                                    <th className="px-4 py-2">Price</th>
-                                                    <th className="px-4 py-2 text-right">Amt</th>
-                                                    <th className="px-4 py-2 text-center">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-200">
-                                                {csvData.slice(0, 10).map((row, i) => {
-                                                    const masterPack = extractFirstNumber(row['Master Packing']);
-                                                    const isDivisible = masterPack > 0 ? (row.pcs % masterPack === 0) : true;
-                                                    
-                                                    return (
-                                                        <tr key={i} className={`hover:bg-slate-50 ${!isDivisible ? 'bg-red-50' : ''}`}>
-                                                            <td className="px-4 py-2 font-medium">{row['Style Number']}</td>
-                                                            <td className="px-4 py-2 text-slate-400">{row.baseStyle}</td>
-                                                            <td className="px-4 py-2">{row['Sizes']}</td>
-                                                            <td className="px-4 py-2">{row['Inner Colorway 1']}</td>
-                                                            <td className="px-4 py-2">{row.pcs}</td>
-                                                            <td className="px-4 py-2">${row.price.toFixed(2)}</td>
-                                                            <td className="px-4 py-2 text-right font-mono">${row.amount}</td>
-                                                            <td className="px-4 py-2 text-center">
-                                                                {!isDivisible && (
-                                                                    <span className="text-xs text-red-600 font-bold flex items-center justify-center gap-1" title={`${row.pcs} not divisible by ${masterPack}`}>
-                                                                        ⚠️ Error
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <div className="flex justify-between items-end mb-2"><h3 className="text-sm font-bold text-slate-700">Data Preview (First 10 Rows)</h3><span className="text-xs text-slate-500">Total Rows: {csvData.length}</span></div>
+                                    <div className="overflow-x-auto border border-slate-200 rounded-lg"><table className="min-w-full text-sm text-left text-slate-600"><thead className="bg-slate-100 text-slate-700 font-semibold uppercase text-xs"><tr><th className="px-4 py-2">Style</th><th className="px-4 py-2">Base (Calc)</th><th className="px-4 py-2">Size</th><th className="px-4 py-2">Color 1</th><th className="px-4 py-2">Pcs</th><th className="px-4 py-2">Price</th><th className="px-4 py-2 text-right">Amt</th><th className="px-4 py-2 text-center">Status</th></tr></thead><tbody className="divide-y divide-slate-200">{csvData.slice(0, 10).map((row, i) => { const masterPack = extractFirstNumber(row['Master Packing']); const isDivisible = masterPack > 0 ? (row.pcs % masterPack === 0) : true; return (<tr key={i} className={`hover:bg-slate-50 ${!isDivisible ? 'bg-red-50' : ''}`}><td className="px-4 py-2 font-medium">{row['Style Number']}</td><td className="px-4 py-2 text-slate-400">{row.baseStyle}</td><td className="px-4 py-2">{row['Sizes']}</td><td className="px-4 py-2">{row['Inner Colorway 1']}</td><td className="px-4 py-2">{row.pcs}</td><td className="px-4 py-2">${row.price.toFixed(2)}</td><td className="px-4 py-2 text-right font-mono">${row.amount}</td><td className="px-4 py-2 text-center">{!isDivisible && (<span className="text-xs text-red-600 font-bold flex items-center justify-center gap-1" title={`${row.pcs} not divisible by ${masterPack}`}>⚠️ Error</span>)}</td></tr>); })}</tbody></table></div>
                                     <p className="text-xs text-slate-400 mt-2 italic">Verify the calculations above before generating PDF. Rows in red have packing errors.</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* SECTION 3: Style Images (UPDATED TO BASE STYLES) */}
                         {uniqueBaseStyles.length > 0 && (
                             <div>
-                                <div className="section-header">
-                                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    3. Style Images (Grouped by Base Style)
-                                </div>
+                                <div className="section-header"><svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>3. Style Images (Grouped by Base Style)</div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {uniqueBaseStyles.map(base => {
                                         const stylesInGroup = Array.from(baseStyleMap[base] || []);
                                         return (
                                             <div key={base} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
                                                 <div className="font-bold text-slate-800 mb-1 text-lg">Base: {base}</div>
-                                                <div className="text-xs text-slate-500 mb-3 italic">
-                                                    Includes: {stylesInGroup.slice(0, 3).join(', ')}{stylesInGroup.length > 3 ? '...' : ''}
-                                                </div>
-                                                
-                                                {/* Input Group with Paste Button */}
+                                                <div className="text-xs text-slate-500 mb-3 italic">Includes: {stylesInGroup.slice(0, 3).join(', ')}{stylesInGroup.length > 3 ? '...' : ''}</div>
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <input 
-                                                        type="file" 
-                                                        accept="image/*" 
-                                                        onChange={(e) => handleImageUpload(base, e.target.files[0])}
-                                                        className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    />
-                                                    <button
-                                                        onClick={() => handlePaste(base)}
-                                                        className="bg-white border border-slate-300 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 p-2 rounded-full shadow-sm transition"
-                                                        title="Paste image from clipboard"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                                    </button>
+                                                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(base, e.target.files[0])} className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                                    <button onClick={() => handlePaste(base)} className="bg-white border border-slate-300 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 p-2 rounded-full shadow-sm transition" title="Paste image from clipboard"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></button>
                                                 </div>
-
                                                 {styleImages[base] ? (
-                                                    <div className="mt-3 h-32 w-full bg-white border rounded flex items-center justify-center overflow-hidden relative">
-                                                        <img src={styleImages[base].data} alt="Preview" className="max-h-full max-w-full object-contain" />
-                                                        <button 
-                                                            onClick={() => setStyleImages(prev => { const n = {...prev}; delete n[base]; return n; })}
-                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                                                        >✕</button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="mt-3 h-32 w-full bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-xs">
-                                                        No Image Selected
-                                                    </div>
-                                                )}
+                                                    <div className="mt-3 h-32 w-full bg-white border rounded flex items-center justify-center overflow-hidden relative"><img src={styleImages[base].data} alt="Preview" className="max-h-full max-w-full object-contain" /><button onClick={() => setStyleImages(prev => { const n = {...prev}; delete n[base]; return n; })} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">✕</button></div>
+                                                ) : (<div className="mt-3 h-32 w-full bg-slate-100 border border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400 text-xs">No Image Selected</div>)}
                                             </div>
                                         );
                                     })}
@@ -1159,52 +1114,72 @@
                             </div>
                         )}
 
-                        {/* SECTION 4: Finish */}
                         <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                             <div className="mb-8 bg-white rounded-lg border border-slate-200 overflow-hidden">
+                                <div 
+                                    className="p-4 flex items-center justify-between cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors"
+                                    onClick={() => setIsSpecialInstructionsOpen(!isSpecialInstructionsOpen)}
+                                >
+                                    <div className="flex items-center gap-2 font-bold text-indigo-900">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Special Instructions (Testing & Packing)
+                                    </div>
+                                    <svg className={`w-5 h-5 text-slate-500 transition-transform ${isSpecialInstructionsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                                
+                                {isSpecialInstructionsOpen && (
+                                    <div className="p-6 border-t border-slate-200 bg-white">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                            {/* Left: Testing */}
+                                            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Testing & Inspection Requirements</h3>
+                                                <div className="space-y-4">
+                                                    <ComplianceCheckbox label="CPSIA 101 – Lead in Substrate of Children’s Products" checked={compliance.cpsiaLeadSubstrate} onChange={() => handleCompliance('cpsiaLeadSubstrate')} />
+                                                    <ComplianceCheckbox label="CPSIA 101, 16 CFR Part 1303 – Lead in Paint" checked={compliance.cpsiaLeadPaint} onChange={() => handleCompliance('cpsiaLeadPaint')} />
+                                                    <ComplianceCheckbox label="16 CFR Part 1610 - Flammability of Clothing Textiles" checked={compliance.flammabilityClothing} onChange={() => handleCompliance('flammabilityClothing')} />
+                                                    <ComplianceCheckbox label="16 CFR 1615/1616 - Flammability (Sleepwear)" checked={compliance.flammabilitySleepwear} onChange={() => handleCompliance('flammabilitySleepwear')} />
+                                                    <div className="pt-2 border-t border-slate-200 mt-2">
+                                                        <ComplianceCheckbox label="FULL INSPECTION REPORT" checked={compliance.fullInspection} onChange={() => handleCompliance('fullInspection')} isBold={true} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Right: Packing */}
+                                            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-200 pb-2">Packing Detail</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                                                    <PackingToggle label="Pre-ticket" value={packing.preTicket} onChange={(v) => handlePackingToggle('preTicket')} />
+                                                    <PackingToggle label="Tracking Lbl" value={packing.trackingLabel} onChange={(v) => handlePackingToggle('trackingLabel')} />
+                                                    <PackingToggle label="Hangers" value={packing.hangers} onChange={(v) => handlePackingToggle('hangers')} />
+                                                    <PackingToggle label="Waist Tag" value={packing.waistSizeTag} onChange={(v) => handlePackingToggle('waistSizeTag')} />
+                                                    <PackingToggle label="Size Tab" value={packing.sizeTab} onChange={(v) => handlePackingToggle('sizeTab')} />
+                                                    <PackingToggle label="Hang Tag" value={packing.hangTag} onChange={(v) => handlePackingToggle('hangTag')} />
+                                                    <PackingToggle label="Inner Care" value={packing.innerCareLabel} onChange={(v) => handlePackingToggle('innerCareLabel')} />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+                                                    <PackingSelect label="Polybags" options={['Indv.', 'Pre-pack']} value={packing.polybags} onChange={(val) => handlePackingSelect('polybags', val)} />
+                                                    <PackingSelect label="Color Asst" options={['No', 'Asst']} value={packing.colorAsst} onChange={(val) => handlePackingSelect('colorAsst', val)} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                             </div>
+
                             <div className="mb-6">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="input-label mb-0">Remarks / Special Instructions</label>
+                                    <label className="input-label mb-0">Remarks / Notes</label>
                                     <span className="text-xs text-slate-500 italic">This text will be listed at the bottom of every page.</span>
                                 </div>
-                                <textarea 
-                                    value={remarks} 
-                                    onChange={(e) => setRemarks(e.target.value)} 
-                                    className="input-field h-24" 
-                                    placeholder="Enter any specific notes for the factory (e.g. 'Pack individually')..."
-                                ></textarea>
+                                <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} className="input-field h-24" placeholder="Enter any specific notes for the factory (e.g. 'Pack individually')..."></textarea>
                             </div>
 
-                            {/* Updated Grid Layout for Buttons */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button 
-                                    onClick={generatePDF}
-                                    disabled={csvData.length === 0}
-                                    className="col-span-1 md:col-span-2 btn-primary text-lg shadow-lg flex items-center justify-center gap-2 py-4"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                    {csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}
-                                </button>
-                                
-                                <button 
-                                    onClick={downloadStyleImportData}
-                                    disabled={csvData.length === 0}
-                                    className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"
-                                >
-                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Download Style Import Data
-                                </button>
-
-                                <button 
-                                    onClick={downloadPOImportData}
-                                    disabled={csvData.length === 0}
-                                    className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"
-                                >
-                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                    Download PO Import Data
-                                </button>
+                                <button onClick={generatePDF} disabled={csvData.length === 0} className="col-span-1 md:col-span-2 btn-primary text-lg shadow-lg flex items-center justify-center gap-2 py-4"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>{csvData.length === 0 ? "Upload CSV to Continue" : "Download Official PDF Purchase Order"}</button>
+                                <button onClick={downloadStyleImportData} disabled={csvData.length === 0} className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"><svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Download Style Import Data</button>
+                                <button onClick={downloadPOImportData} disabled={csvData.length === 0} className="btn-secondary text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed py-3"><svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Download PO Import Data</button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             );
